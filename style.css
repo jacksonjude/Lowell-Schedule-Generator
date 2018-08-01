@@ -1,0 +1,66 @@
+.background {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: -1;
+
+  display: block;
+
+  background: url(assets/background.jpg);
+  background-size: cover;
+
+  -webkit-filter: blur(10px);
+  -moz-filter: blur(10px);
+  -o-filter: blur(10px);
+  -ms-filter: blur(10px);
+  filter: blur(10px);
+
+  min-width: 100%;
+  min-height: 100%;
+}
+
+.outline {
+    color: BLACK;
+    -webkit-text-fill-color: WHITE;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: black;
+}
+
+.departmentScrollerContainer, .classSelectionContainer, .myScheduleContainer, .teacherSelectionContainer, .courseScrollerContainer, .myTeachersContainer, .offBlockScrollerContainer, .offBlockSelectionContainer, .myOffBlocksContainer
+{
+    position: relative;
+    display: inline-block;
+    padding-left: 20px;
+    vertical-align: top;
+}
+
+.departmentScroller, .classSelection, .mySchedule, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection
+{
+    color: WHITE;
+    border:1px solid white;
+    background-color: #444444;
+    padding-left:10px;
+    padding-right:10px;
+}
+
+.classSelection, .teacherSelection, .offBlockSelection
+{
+    min-width: 400;
+}
+
+.mySchedule, .myTeachers
+{
+    min-height: 220;
+    min-width: 250;
+}
+
+.myTeachersContainer
+{
+    width: 100%;
+    max-width: 380;
+}
+
+.myOffBlocks
+{
+    min-width: 190;
+}
