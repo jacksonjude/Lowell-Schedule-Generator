@@ -51,7 +51,7 @@ function loadCourseSelection()
     }
     if (selectedCourseCodes.length >= minClasses)
     {
-        $(".mySchedule").append("<input id='nextButton' type='button' value='Next' style='position:absolute; top:20; right:20; vertical-align: top' onclick='loadTeacherSelection()'>")
+        $(".mySchedule").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
     }
 }
 
@@ -160,7 +160,7 @@ function checkedCourse(checkbox)
 
         if (selectedCourseCodes.length == minClasses)
         {
-            $(".mySchedule").append("<input id='nextButton' type='button' value='Next' style='position:absolute; top:20; right:20; vertical-align: top' onclick='loadTeacherSelection()'>")
+            $(".mySchedule").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
         }
     }
     else
@@ -260,14 +260,14 @@ function loadTeacherSelection()
             canContinue = false
         }
     }
-    if (selectedTeacherArrayKey.length == 0)
+    if (selectedTeachers.length == 0)
     {
         canContinue = false
     }
 
     if (canContinue)
     {
-        $(".myTeachers").append("<input id='nextButton' type='button' value='Next' style='position:absolute; top:20; right:20; vertical-align: top' onclick='loadOffBlockSelection()'>")
+        $(".myTeachers").append("<input id='nextButton' type='button' value='Next' onclick='loadOffBlockSelection()'>")
     }
 }
 
@@ -375,7 +375,7 @@ function checkedTeacher(checkbox)
 
         if (canContinue)
         {
-            $(".myTeachers").append("<input id='nextButton' type='button' value='Next' style='position:absolute; top:20; right:20; vertical-align: top' onclick='loadOffBlockSelection()'>")
+            $(".myTeachers").append("<input id='nextButton' type='button' value='Next' onclick='loadOffBlockSelection()'>")
         }
     }
     else
@@ -457,7 +457,7 @@ function loadOffBlockSelection()
 
     if (canContinue)
     {
-        $(".myOffBlocks").append("<input id='nextButton' type='button' value='Next' style='position:absolute; top:20; right:20; vertical-align: top' onclick='generateSchedules()'>")
+        $(".myOffBlocks").append("<input id='nextButton' type='button' value='Next' onclick='generateSchedules()'>")
     }
 
     selectOffBlock("#offBlock1")
@@ -548,7 +548,7 @@ function reloadMyOffBlocks()
 
     if (canContinue)
     {
-        $(".myOffBlocks").append("<input id='nextButton' type='button' value='Next' style='position:absolute; top:20; right:20; vertical-align: top' onclick='generateSchedules()'>")
+        $(".myOffBlocks").append("<input id='nextButton' type='button' value='Next' onclick='generateSchedules()'>")
     }
 
     $(".myOffBlocks").append("<br>")
@@ -571,15 +571,12 @@ var blockArrays = []
 var offBlockID = "OFFBLOCK"
 var schedules = []
 var currentSchedule = []
-var coursesDone = 0
 
-function generateSchedules()
+async function generateSchedules()
 {
     blockArrays = []
-    offBlockID = "OFFBLOCK"
     schedules = []
     currentSchedule = []
-    coursesDone = 0
 
     $("#instructions").html("Generating...")
 
@@ -588,63 +585,55 @@ function generateSchedules()
         blockArrays.push([])
     }
 
-    var blockArraySortPromise = new Promise((resolve, reject) => {
+    for (selectedCourseNum in selectedCourseCodes)
+    {
+        await sortBlockArray(selectedCourseCodes[selectedCourseNum])
+    }
 
-        for (selectedCourseNum in selectedCourseCodes)
+    for (offBlockArrayNum in selectedOffBlocks)
+    {
+        for (offBlockNum in selectedOffBlocks[offBlockArrayNum])
         {
-            sortBlockArray(selectedCourseCodes[selectedCourseNum], resolve)
+            blockArrays[selectedOffBlocks[offBlockArrayNum][offBlockNum]-1].push(offBlockID)
         }
-    })
+    }
 
-    blockArraySortPromise.then(value => {
-        for (offBlockArrayNum in selectedOffBlocks)
-        {
-            for (offBlockNum in selectedOffBlocks[offBlockArrayNum])
-            {
-                blockArrays[selectedOffBlocks[offBlockArrayNum][offBlockNum]-1].push("OFFBLOCK")
-            }
-        }
+    console.log(blockArrays)
 
-        console.log(blockArrays)
+    createSchedules()
 
-        createSchedules()
-
-        $("#selection").empty()
-        displaySchedules()
-    }, reason => {
-        console.log(reason)
-    })
+    $("#selection").empty()
+    displaySchedules()
 }
 
-function sortBlockArray(selectedCourseCode, resolve)
+function sortBlockArray(selectedCourseCode)
 {
-    var whereSQL = "courseCode=\"" + selectedCourseCodes[selectedCourseNum] + "\" and ("
-    for (teacher in selectedTeachers[selectedCourseCodes.indexOf(selectedCourseCode)])
-    {
-        if (teacher != 0)
+    var sortBlockArrayPromise = new Promise(function(resolveBlockArray, rejectBlockArray) {
+        var whereSQL = "courseCode=\"" + selectedCourseCodes[selectedCourseNum] + "\" and ("
+        for (teacher in selectedTeachers[selectedCourseCodes.indexOf(selectedCourseCode)])
         {
-            whereSQL += " or "
-        }
-        whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(selectedCourseCode)][teacher] + "\""
-    }
-    whereSQL += ")"
-
-    $.getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":"blockNumber,count(blockNumber)", "where":whereSQL, "group":"blockNumber", "order":"blockNumber asc"}, function(data) {
-        for (countNum in data)
-        {
-            if (parseInt(data[countNum]["count(blockNumber)"]) > 0)
+            if (teacher != 0)
             {
-                blockArrays[parseInt(data[countNum]["blockNumber"])-1].push(selectedCourseCode)
+                whereSQL += " or "
             }
+            whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(selectedCourseCode)][teacher] + "\""
         }
+        whereSQL += ")"
 
-        coursesDone += 1
+        $.getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":"blockNumber,count(blockNumber)", "where":whereSQL, "group":"blockNumber", "order":"blockNumber asc"}, function(data) {
+            for (countNum in data)
+            {
+                if (parseInt(data[countNum]["count(blockNumber)"]) > 0)
+                {
+                    blockArrays[parseInt(data[countNum]["blockNumber"])-1].push(selectedCourseCode)
+                }
+            }
 
-        if (coursesDone == selectedCourseCodes.length)
-        {
-            resolve()
-        }
+            resolveBlockArray()
+        })
     })
+
+    return sortBlockArrayPromise
 }
 
 function createSchedules()
@@ -681,10 +670,10 @@ async function displaySchedules()
 {
     for (scheduleNum in schedules)
     {
-        var scheduleHTML = "<div style='display: inline-block; position: relative; padding-left: 20px; min-width: 380px'><div style='background-color: #444444; border:1px solid white; color:white; padding-left: 20px; padding-top: 10px; padding-bottom: 10px; padding-right: 20px' id='schedule" + (parseInt(scheduleNum)+1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum)+1).toString() + "</h3><h4>"
+        var scheduleHTML = "<div class='scheduleContainer'><div class='schedule' id='schedule" + (parseInt(scheduleNum)+1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum)+1).toString() + "</h3><h4>"
         for (scheduleBlockNum in schedules[scheduleNum])
         {
-            if (schedules[scheduleNum][scheduleBlockNum] == "OFFBLOCK")
+            if (schedules[scheduleNum][scheduleBlockNum] == offBlockID)
             {
                 scheduleHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + ": Off Block<br>"
             }
