@@ -1,4 +1,5 @@
-const dataSource = "http://73.222.6.8/lowellscheduledatabase/query/"
+const dataSource = "https://jjcooley.ddns.net/lowellscheduledatabase/query/"
+const sessionSource = "https://jjcooley.ddns.net/lowellscheduledatabase/session/"
 
 const maxClasses = 7
 const minClasses = 5
@@ -15,9 +16,16 @@ var selectedOffBlocks = []
 var checkboxesDisabled = false
 var checkboxes = []
 
+$.ajaxSetup({
+  // Disable caching of AJAX responses
+  cache: false
+})
+
 $(function() {
     loadCourseSelection()
 })
+
+//MARK: - Course Selection
 
 function loadCourseSelection()
 {
@@ -56,6 +64,8 @@ function setupCourseSelectionElements()
     selection.append("<div class='departmentScrollerContainer'></div>")
     selection.append("<div class=classSelectionContainer><div class='classSelection'></div></div>")
     selection.append("<div class=myScheduleContainer><div class='mySchedule'><h3><div id='myScheduleTitle'>My Schedule</div></h3></div></div>")
+
+    $("#instructions").html("Choose your classes and then click \"Next\"")
 }
 
 function getDepartmentObjects(completion)
@@ -128,6 +138,11 @@ function checkedCourse(checkbox)
     {
         selectedCourseCodes.push($(checkbox).attr("id"))
 
+        if (selectedTeachers.length > 0)
+        {
+            selectedTeachers.push([])
+        }
+
         if (selectedCourseCodes.length == maxClasses)
         {
             checkboxesDisabled = true
@@ -150,6 +165,11 @@ function checkedCourse(checkbox)
     }
     else
     {
+        if (selectedTeachers.length > 0)
+        {
+            selectedTeachers.splice(selectedCourseCodes.indexOf($(checkbox).attr("id")), 1)
+        }
+
         selectedCourseCodes.splice(selectedCourseCodes.indexOf($(checkbox).attr("id")), 1)
 
         if (selectedCourseCodes.length == maxClasses-1)
@@ -188,13 +208,16 @@ function removeFromMySchedule(courseCode)
     $(".mySchedule").find("#" + courseCode).remove()
 }
 
+//MARK: - Teacher Selection
+
 function loadTeacherSelection()
 {
     checkboxes = []
     checkboxesDisabled = false
 
     selectedCourse = "0"
-    //selectedTeachers = []
+
+    var updateSelectedTeachers = (selectedTeachers.length == 0)
 
     setupTeacherSelectionElements()
 
@@ -209,7 +232,10 @@ function loadTeacherSelection()
             $(".courseScrollerContainer").append(courseRow)
 
             selectedCourseCodesTmp.push(courses[courseNum].courseCode)
-            selectedTeachers.push([])
+            if (updateSelectedTeachers)
+            {
+                selectedTeachers.push([])
+            }
         }
 
         selectedCourseCodes = selectedCourseCodesTmp
@@ -225,6 +251,7 @@ function loadTeacherSelection()
             addToMyTeachers(selectedTeachers[teacherArrayNum][teacherNum], selectedCourseCodes[teacherArrayNum])
         }
     }
+
     var canContinue = true
     for (var selectedTeacherArrayKey in selectedTeachers)
     {
@@ -232,6 +259,10 @@ function loadTeacherSelection()
         {
             canContinue = false
         }
+    }
+    if (selectedTeacherArrayKey.length == 0)
+    {
+        canContinue = false
     }
 
     if (canContinue)
@@ -249,6 +280,8 @@ function setupTeacherSelectionElements()
     selection.append("<div class='courseScrollerContainer'></div>")
     selection.append("<div class='teacherSelectionContainer'><div class='teacherSelection'></div></div>")
     selection.append("<div class='myTeachersContainer'><div class='myTeachers'><h3><div id='myTeachersTitle'>My Teachers</div></h3><br></div></div>")
+
+    $("#instructions").html("Choose any teachers you want to have and then click \"Next\"")
 }
 
 function getCourses(courseCodeArray, completion)
@@ -381,11 +414,20 @@ function removeFromMyTeachers(teacher)
     $(".myTeachers").find("#" + selectedCourse + SHA256(teacher)).remove()
 }
 
+//MARK: - Off Block Selection
+
 function loadOffBlockSelection()
 {
+    checkboxes = []
+    checkboxesDisabled = false
+
+    selectedOffBlockNumber = "0"
+
     setupOffBlockSelectionElements()
 
-    var updateSelectedOffBlocks = (selectedOffBlocks == [])
+    console.log(selectedTeachers)
+
+    var updateSelectedOffBlocks = (selectedOffBlocks.length == 0)
 
     for (var i=0; i < maxClasses+1-selectedCourseCodes.length; i++)
     {
@@ -399,13 +441,6 @@ function loadOffBlockSelection()
         }
     }
 
-    /*for (offBlockArrayNum in selectedOffBlocks)
-    {
-        for (offBlockNum in selectedOffBlocks[offBlockArrayNum])
-        {
-            addToMySchedule(selectedOffBlocks[offBlockArrayNum][offBlockNum])
-        }
-    }*/
     reloadMyOffBlocks()
 
     var canContinue = true
@@ -413,7 +448,6 @@ function loadOffBlockSelection()
     {
         for (offBlockNum2 in selectedOffBlocks)
         {
-            console.log(selectedOffBlocks)
             if ((offBlockNum != offBlockNum2 && selectedOffBlocks[offBlockNum].sort().join(',') === selectedOffBlocks[offBlockNum2].sort().join(',')) || selectedOffBlocks[offBlockNum].length == 0 || selectedOffBlocks[offBlockNum2].length == 0)
             {
                 canContinue = false
@@ -427,6 +461,8 @@ function loadOffBlockSelection()
     }
 
     selectOffBlock("#offBlock1")
+
+    $("#instructions").html("Choose any off blocks you would like to have and then click \"Next\"")
 }
 
 function setupOffBlockSelectionElements()
@@ -436,7 +472,7 @@ function setupOffBlockSelectionElements()
     selection.empty()
 
     selection.append("<div class='offBlockScrollerContainer'></div>")
-    selection.append("<div class='offBlockSelectionContainer'><div class='offBlockSelection'><br></div></div>")
+    selection.append("<div class='offBlockSelectionContainer' style='position:relative'><div class='offBlockSelection'><br></div><button id='selectButton' onclick='selectAllOffBlocks()' style='position:absolute; top:20; right:20; vertical-align: top'>Select All</button></div>")
     selection.append("<div class='myOffBlocksContainer'><div class='myOffBlocks'><h3><div id='myOffBlocksTitle'>My Off Blocks</div></h3><br></div></div>")
 }
 
@@ -503,7 +539,7 @@ function reloadMyOffBlocks()
     {
         for (offBlockNum2 in selectedOffBlocks)
         {
-            if ((offBlockNum != offBlockNum2 && selectedOffBlocks[offBlockNum].sort().join(',') === selectedOffBlocks[offBlockNum2].sort().join(',')) || selectedOffBlocks[offBlockNum].length == 0 || selectedOffBlocks[offBlockNum2].length == 0)
+            if ((offBlockNum != offBlockNum2 && selectedOffBlocks[offBlockNum].sort().join(',') === selectedOffBlocks[offBlockNum2].sort().join(',') && selectedOffBlocks[offBlockNum].length < selectedOffBlocks.length && selectedOffBlocks[offBlockNum2].length < selectedOffBlocks.length) || selectedOffBlocks[offBlockNum].length == 0 || selectedOffBlocks[offBlockNum2].length == 0)
             {
                 canContinue = false
             }
@@ -518,6 +554,19 @@ function reloadMyOffBlocks()
     $(".myOffBlocks").append("<br>")
 }
 
+function selectAllOffBlocks()
+{
+    selectedOffBlocks[parseInt(selectedOffBlockNumber)-1] = []
+    for (var i=0; i < maxClasses+1; i++)
+    {
+        var checkbox = $("#" + (parseInt(i)+1).toString())
+        checkbox.prop("checked", true)
+        checkedOffBlock(checkbox[0])
+    }
+}
+
+//MARK: - Generate Schedules
+
 var blockArrays = []
 var offBlockID = "OFFBLOCK"
 var schedules = []
@@ -526,6 +575,14 @@ var coursesDone = 0
 
 function generateSchedules()
 {
+    blockArrays = []
+    offBlockID = "OFFBLOCK"
+    schedules = []
+    currentSchedule = []
+    coursesDone = 0
+
+    $("#instructions").html("Generating...")
+
     for (var i=0; i < maxClasses+1; i++)
     {
         blockArrays.push([])
@@ -624,17 +681,21 @@ async function displaySchedules()
 {
     for (scheduleNum in schedules)
     {
-        var scheduleHTML = "<div id='schedule" + (parseInt(scheduleNum)+1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum)+1).toString() + "</h3><h4>"
+        var scheduleHTML = "<div style='display: inline-block; position: relative; padding-left: 20px; min-width: 380px'><div style='background-color: #444444; border:1px solid white; color:white; padding-left: 20px; padding-top: 10px; padding-bottom: 10px; padding-right: 20px' id='schedule" + (parseInt(scheduleNum)+1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum)+1).toString() + "</h3><h4>"
         for (scheduleBlockNum in schedules[scheduleNum])
         {
             if (schedules[scheduleNum][scheduleBlockNum] == "OFFBLOCK")
             {
-                scheduleHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + " - Off Block<br>"
+                scheduleHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + ": Off Block<br>"
             }
             else
             {
-                //console.log(schedules[scheduleNum][scheduleBlockNum] + selectedCourseCodes.indexOf(schedules[scheduleNum][scheduleBlockNum]) + (selectedTeachers[selectedCourseCodes.indexOf(schedules[scheduleNum][scheduleBlockNum])]).toString())
-                scheduleHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + " - "
+                scheduleHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + ": "
+
+                await getCourseName(schedules[scheduleNum][scheduleBlockNum], function(courseName) {
+                    scheduleHTML += courseName + " - "
+                })
+
                 var whereSQL = "courseCode=\"" + schedules[scheduleNum][scheduleBlockNum] + "\" and blockNumber=" + (parseInt(scheduleBlockNum)+1).toString() + " and ("
 
                 for (teacherNum in selectedTeachers[selectedCourseCodes.indexOf(schedules[scheduleNum][scheduleBlockNum])])
@@ -646,8 +707,6 @@ async function displaySchedules()
                     whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(schedules[scheduleNum][scheduleBlockNum])][teacherNum] + "\""
                 }
                 whereSQL += ")"
-
-                //console.log(whereSQL)
 
                 await getScheduleBlockTeachers(whereSQL, function(data) {
                     for (teacherNum in data)
@@ -664,19 +723,13 @@ async function displaySchedules()
             }
         }
 
+        scheduleHTML += "</div></div><br><br>"
+
         $("#selection").append(scheduleHTML)
     }
-}
 
-async function displaySchedule(scheduleNum)
-{
-    var scheduleDisplayPromise = new Promise((resolve, reject) => {
-
-
-        resolve()
-    })
-
-    return scheduleDisplayPromise
+    $("#instructions").html("Done!")
+    $("#instructions").append("  <button onclick='loadCourseSelection()'>Edit</button> <button onclick='reloadPage()'>Clear</button>")
 }
 
 function getScheduleBlockTeachers(whereSQL, completion)
@@ -692,29 +745,39 @@ function getScheduleBlockTeachers(whereSQL, completion)
     return jsonPromise
 }
 
+function getCourseName(courseCode, completion)
+{
+    var getCourseNamePromise = new Promise((resolve, reject) => {
+        $.getJSON(dataSource, {"table":"courses", "column":"courseName", "key":"courseCode", "value":courseCode}, function(courseData) {
+            completion(courseData[0]["courseName"])
+
+            resolve()
+        })
+    })
+
+    return getCourseNamePromise
+}
+
+function reloadPage()
+{
+    $(document.body).append('<meta http-equiv="refresh" content="0;url=./index.html">')
+}
+
+//MARK: - Sessions
 
 function saveSession(id)
 {
-    console.log("Saving data")
+    console.log("Saving Data...")
     console.log({"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(selectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks)})
-    /*$.ajax({
-        url: "http://73.222.6.8/lowellscheduledatabase/session/",
-        data: JSON.stringify({"command":"save", "id":id, "coursesJSON":selectedCourseCodes, "teachersJSON":selectedTeachers, "offBlocksJSON":selectedOffBlocks}),
-        //dataType: 'json',
-        processData: false,
-        success: function(data) {
-            console.log(data)
-        }
-    })*/
 
-    $.post("http://73.222.6.8/lowellscheduledatabase/session/", {"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(selectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks)}, function(data) {
-
+    $.post(sessionSource, {"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(selectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks)}, function(data) {
+        console.log("Data Saved!")
     })
 }
 
 function loadSession(id)
 {
-    $.post("http://73.222.6.8/lowellscheduledatabase/session/", {"command":"load", "id":id}, function(data) {
+    $.post(sessionSource, {"command":"load", "id":id}, function(data) {
         loadSessionJSON(data)
 
         loadCourseSelection()
