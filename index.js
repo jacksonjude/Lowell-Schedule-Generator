@@ -4,6 +4,8 @@ const sessionSource = "https://jjcooley.ddns.net/lowellscheduledatabase/session/
 const maxClasses = 7
 const minClasses = 5
 
+var departments = []
+
 var selectedDepartment = "0"
 var selectedCourseCodes = []
 
@@ -15,6 +17,8 @@ var selectedOffBlocks = []
 
 var checkboxesDisabled = false
 var checkboxes = []
+
+var courseNames = []
 
 $.ajaxSetup({
   // Disable caching of AJAX responses
@@ -29,12 +33,18 @@ $(function() {
 
 function loadCourseSelection()
 {
+    //Reset checkboxes
     checkboxes = []
     checkboxesDisabled = false
 
+    //Setup HTML elements
     setupCourseSelectionElements()
 
-    getDepartmentObjects(function(departments) {
+    //Get side scroller objects
+    getDepartmentObjects(function(departmentsTmp) {
+        departments = departmentsTmp
+
+        //Create a row for each object
         for (departmentObject in departments)
         {
             var departmentRow = $("<div class='departmentScroller' id='dep" + departments[departmentObject].departmentNum + "'><h3 style='color:WHITE;'>" + departments[departmentObject].departmentTitle + "</h3></div>")
@@ -42,9 +52,11 @@ function loadCourseSelection()
             $(".departmentScrollerContainer").append(departmentRow)
         }
 
+        //Select first object
         selectDepartment($("#dep1"))
     })
 
+    //Add selected courses if any exist
     for (courseCodeNum in selectedCourseCodes)
     {
         addToMySchedule(selectedCourseCodes[courseCodeNum])
@@ -57,6 +69,7 @@ function loadCourseSelection()
 
 function setupCourseSelectionElements()
 {
+    //Add scroller, checkbox container, and selected object container
     var selection = $("#selection")
 
     selection.empty()
@@ -70,22 +83,26 @@ function setupCourseSelectionElements()
 
 function getDepartmentObjects(completion)
 {
+    //Get departments from source
     $.getJSON(dataSource, {"table":"departments"}, function(data) {
-        var departments = []
+        var departmentsTmp = []
         for (departmentIndex in data)
         {
+            //Create department objects
             var departmentArray = data[departmentIndex]
-            console.log(departmentArray)
             var department = new SchoolDepartment(departmentArray)
-            departments.push(department)
+            departmentsTmp.push(department)
         }
 
-        completion(departments)
+        console.log(departmentsTmp)
+
+        completion(departmentsTmp)
     })
 }
 
 function selectDepartment(departmentElement)
 {
+    //Set background colors
     if (selectedDepartment != "0")
     {
         $("#dep" + selectedDepartment).css({"background-color":"#444444"})
@@ -95,14 +112,17 @@ function selectDepartment(departmentElement)
 
     $(departmentElement).css({"background-color":"#992222"})
 
+    //Get course objects from department
     getCoursesFromDepartment(selectedDepartment, function(courses) {
         var classSelection = $(".classSelection")
 
         classSelection.empty()
         classSelection.append("<br>")
+        //Add a checkbox for each course object
         for (course in courses)
         {
             var courseInput = $("<input>")
+
             courseInput.attr("id", courses[course].courseCode)
             courseInput.attr("type", "checkbox")
             courseInput.attr("onclick", "checkedCourse(this)")
@@ -119,10 +139,12 @@ function selectDepartment(departmentElement)
 
 function getCoursesFromDepartment(departmentNumber, completion)
 {
+  //Get courses from a departmentNumber
     $.getJSON(dataSource, {"table":"courses", "column":"courseName,courseCode", "key":"departmentNumber", "value":departmentNumber}, function(data) {
         var courses = []
         for (courseIndex in data)
         {
+            //Create SchoolCourse objects
             var courseArray = data[courseIndex]
             var course = new SchoolCourse(courseArray)
             courses.push(course)
@@ -134,21 +156,26 @@ function getCoursesFromDepartment(departmentNumber, completion)
 
 function checkedCourse(checkbox)
 {
+    //When a course checkbox is checked
     if (checkbox.checked)
     {
+        //Add it to the selected course codes
         selectedCourseCodes.push($(checkbox).attr("id"))
 
         if (selectedTeachers.length > 0)
         {
+            //Add an array to the for the course in the selectedTeachers array
             selectedTeachers.push([])
         }
 
+        //Disable the checkboxes if the class max is reached
         if (selectedCourseCodes.length == maxClasses)
         {
             checkboxesDisabled = true
 
             for (checkboxNum in checkboxes)
             {
+                //Only disable if not checked
                 if (!checkboxes[checkboxNum][0].checked)
                 {
                     checkboxes[checkboxNum][0].disabled = true
@@ -156,8 +183,10 @@ function checkedCourse(checkbox)
             }
         }
 
+        //Add the course to the selected course container
         addToMySchedule($(checkbox).attr("id"))
 
+        //Add a nextButton if there are enough selectedCourses
         if (selectedCourseCodes.length == minClasses)
         {
             $(".mySchedule").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
@@ -167,11 +196,14 @@ function checkedCourse(checkbox)
     {
         if (selectedTeachers.length > 0)
         {
+            //Remove the array for the selectedCourse in selectedTeac
             selectedTeachers.splice(selectedCourseCodes.indexOf($(checkbox).attr("id")), 1)
         }
 
+        //Remove course from selectedCourseCodes
         selectedCourseCodes.splice(selectedCourseCodes.indexOf($(checkbox).attr("id")), 1)
 
+        //Re-enable check boxes if the selectedCourseCodes count is maxClasses-1
         if (selectedCourseCodes.length == maxClasses-1)
         {
             checkboxesDisabled = false
@@ -185,8 +217,10 @@ function checkedCourse(checkbox)
             }
         }
 
+        //Remove the course from the selected course container
         removeFromMySchedule($(checkbox).attr("id"))
 
+        //Remove the nextButton if there aren't enough classes
         if (selectedCourseCodes.length == minClasses-1)
         {
             $(".mySchedule").find("#nextButton").remove()
@@ -196,15 +230,15 @@ function checkedCourse(checkbox)
 
 function addToMySchedule(courseCode)
 {
+    //Get the course name and the department number
     $.getJSON(dataSource, {"table":"courses", "column":"courseName,departmentNumber", "key":"courseCode", "value":courseCode}, function(courseData) {
-        $.getJSON(dataSource, {"table":"departments", "column":"departmentTitle", "key":"departmentNumber", "value":courseData[0]["departmentNumber"]}, function(departmentData) {
-            $(".mySchedule").append("<div id=" + courseCode + ">" + departmentData[0]["departmentTitle"] + " - " + courseData[0]["courseName"] + "</div>")
-        })
+        $(".mySchedule").append("<div id=" + courseCode + ">" + departments[parseInt(courseData[0]["departmentNumber"])-1].departmentTitle + " - " + courseData[0]["courseName"] + "</div>")
     })
 }
 
 function removeFromMySchedule(courseCode)
 {
+    //Remove from the schedule
     $(".mySchedule").find("#" + courseCode).remove()
 }
 
@@ -212,6 +246,7 @@ function removeFromMySchedule(courseCode)
 
 function loadTeacherSelection()
 {
+    //Reset checkboxes
     checkboxes = []
     checkboxesDisabled = false
 
@@ -219,14 +254,17 @@ function loadTeacherSelection()
 
     var updateSelectedTeachers = (selectedTeachers.length == 0)
 
+    //Setup HTML elements
     setupTeacherSelectionElements()
 
+    //Get side scroller objects
     getCourses(selectedCourseCodes, function(courses)
     {
         var selectedCourseCodesTmp = []
 
         for (courseNum in courses)
         {
+            //Create a row for each object
             var courseRow = $("<div class='courseScroller' id='course" + courses[courseNum].courseCode + "'><h3 style='color:WHITE;'>" + courses[courseNum].courseName + "</h3></div>")
             courseRow.attr("onclick", "selectCourse(this)")
             $(".courseScrollerContainer").append(courseRow)
@@ -241,17 +279,14 @@ function loadTeacherSelection()
         selectedCourseCodes = selectedCourseCodesTmp
         console.log(selectedCourseCodes)
 
+        //Select first object
         selectCourse($("#course" + selectedCourseCodes[0]))
     })
 
-    for (teacherArrayNum in selectedTeachers)
-    {
-        for (teacherNum in selectedTeachers[teacherArrayNum])
-        {
-            addToMyTeachers(selectedTeachers[teacherArrayNum][teacherNum], selectedCourseCodes[teacherArrayNum])
-        }
-    }
+    //Add any previous selectedTeachers to myTeachers
+    addAllTeachersToMyTeachers()
 
+    //Test if there is at least one selected teacher for each course
     var canContinue = true
     for (var selectedTeacherArrayKey in selectedTeachers)
     {
@@ -265,6 +300,7 @@ function loadTeacherSelection()
         canContinue = false
     }
 
+    //Add the nextButton if there is
     if (canContinue)
     {
         $(".myTeachers").append("<input id='nextButton' type='button' value='Next' onclick='loadOffBlockSelection()'>")
@@ -273,6 +309,7 @@ function loadTeacherSelection()
 
 function setupTeacherSelectionElements()
 {
+    //Add scroller, checkbox container, and selected object container
     var selection = $("#selection")
 
     selection.empty()
@@ -286,6 +323,7 @@ function setupTeacherSelectionElements()
 
 function getCourses(courseCodeArray, completion)
 {
+    //Get courses from courseCodes
     var whereSQL = ""
     for (courseCodeNum in courseCodeArray)
     {
@@ -301,6 +339,7 @@ function getCourses(courseCodeArray, completion)
 
         for (courseNum in data)
         {
+            //Create course objects
             var courseArray = data[courseNum]
             var course = new SchoolCourse(courseArray)
             courses.push(course)
@@ -312,6 +351,7 @@ function getCourses(courseCodeArray, completion)
 
 function getTeachersForCourse(courseCode, completion)
 {
+    //Fetch teachers from courseCode
     $.getJSON(dataSource, {"table":"blocks", "column":"teacher", "key":"courseCode", "value":courseCode, "distinct":"618", "order":"teacher asc"}, function(data) {
         var teachers = []
         for (teacherObjectNum in data)
@@ -324,6 +364,7 @@ function getTeachersForCourse(courseCode, completion)
 
 function selectCourse(courseElement)
 {
+    //Set background colors
     if (selectedCourse != "0")
     {
         $("#course" + selectedCourse).css({"background-color":"#444444"})
@@ -400,13 +441,30 @@ function checkedTeacher(checkbox)
     }
 }
 
+async function addAllTeachersToMyTeachers()
+{
+    for (teacherArrayNum in selectedTeachers)
+    {
+        for (teacherNum in selectedTeachers[teacherArrayNum])
+        {
+            await addToMyTeachers(selectedTeachers[teacherArrayNum][teacherNum], selectedCourseCodes[teacherArrayNum])
+        }
+    }
+}
+
 function addToMyTeachers(teacher, localCourse)
 {
-    $.getJSON(dataSource, {"table":"courses", "column":"courseName", "key":"courseCode", "value":(localCourse ? localCourse : selectedCourse)}, function(courseData) {
-        $(".myTeachers").find("br").remove()
-        $(".myTeachers").append("<div id='" + (localCourse ? localCourse : selectedCourse) + SHA256(teacher) + "'>" + courseData[0]["courseName"] + " - " + teacher + "</div>")
-        $(".myTeachers").append("<br>")
+    var myTeachersPromise = new Promise((resolve, reject) => {
+        getCourseName((localCourse ? localCourse : selectedCourse), function(courseName) {
+            $(".myTeachers").find("br").remove()
+            $(".myTeachers").append("<div id='" + (localCourse ? localCourse : selectedCourse) + SHA256(teacher) + "'>" + courseName + " - " + teacher + "</div>")
+            $(".myTeachers").append("<br>")
+
+            resolve()
+        })
     })
+
+    return myTeachersPromise
 }
 
 function removeFromMyTeachers(teacher)
@@ -567,8 +625,11 @@ function selectAllOffBlocks()
 
 //MARK: - Generate Schedules
 
+const offBlockID = "OFFBLOCK"
+const scheduleDisplayCount = 10
+var numberOfSchedulesDisplaying = 0
+
 var blockArrays = []
-var offBlockID = "OFFBLOCK"
 var schedules = []
 var currentSchedule = []
 
@@ -577,6 +638,7 @@ async function generateSchedules()
     blockArrays = []
     schedules = []
     currentSchedule = []
+    numberOfSchedulesDisplaying = 0
 
     $("#instructions").html("Generating...")
 
@@ -594,7 +656,7 @@ async function generateSchedules()
     {
         for (offBlockNum in selectedOffBlocks[offBlockArrayNum])
         {
-            blockArrays[selectedOffBlocks[offBlockArrayNum][offBlockNum]-1].push(offBlockID)
+            blockArrays[selectedOffBlocks[offBlockArrayNum][offBlockNum]-1][offBlockID] = []
         }
     }
 
@@ -609,7 +671,7 @@ async function generateSchedules()
 function sortBlockArray(selectedCourseCode)
 {
     var sortBlockArrayPromise = new Promise(function(resolveBlockArray, rejectBlockArray) {
-        var whereSQL = "courseCode=\"" + selectedCourseCodes[selectedCourseNum] + "\" and ("
+        /*var whereSQL = "courseCode=\"" + selectedCourseCodes[selectedCourseNum] + "\" and ("
         for (teacher in selectedTeachers[selectedCourseCodes.indexOf(selectedCourseCode)])
         {
             if (teacher != 0)
@@ -620,12 +682,13 @@ function sortBlockArray(selectedCourseCode)
         }
         whereSQL += ")"
 
-        $.getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":"blockNumber,count(blockNumber)", "where":whereSQL, "group":"blockNumber", "order":"blockNumber asc"}, function(data) {
+        $.getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":"blockNumber,count(blockNumber)", "where":whereSQL, "group":"blockNumber", "order":"blockNumber asc"}, function(data) {*/
+        getBlockDataFromCourseCodeAndSelectedTeachers(selectedCourseCode, "blockNumber,count(blockNumber),group_concat(teacher separator '--')", function(data) {
             for (countNum in data)
             {
                 if (parseInt(data[countNum]["count(blockNumber)"]) > 0)
                 {
-                    blockArrays[parseInt(data[countNum]["blockNumber"])-1].push(selectedCourseCode)
+                    blockArrays[parseInt(data[countNum]["blockNumber"])-1][selectedCourseCode] = data[countNum]["group_concat(teacher separator '--')"].split("--")
                 }
             }
 
@@ -634,6 +697,24 @@ function sortBlockArray(selectedCourseCode)
     })
 
     return sortBlockArrayPromise
+}
+
+function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, completion)
+{
+    var whereSQL = "courseCode=\"" + courseCode + "\" and ("
+    for (teacher in selectedTeachers[selectedCourseCodes.indexOf(courseCode)])
+    {
+        if (teacher != 0)
+        {
+            whereSQL += " or "
+        }
+        whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(courseCode)][teacher] + "\""
+    }
+    whereSQL += ")"
+
+    $.getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":column, "where":whereSQL, "group":"blockNumber", "order":"blockNumber asc"}, function(data) {
+        completion(data)
+    })
 }
 
 function createSchedules()
@@ -646,14 +727,14 @@ function scheduleLoopSearch(indexOn)
 {
     if (blockArrays.length > indexOn)
     {
-        for (var object in blockArrays[indexOn])
+        for (var object in Object.keys(blockArrays[indexOn]))
         {
-            if (currentSchedule.includes(blockArrays[indexOn][object]))
+            if (currentSchedule.includes(Object.keys(blockArrays[indexOn])[object]))
             {
                 continue
             }
 
-            currentSchedule.push(blockArrays[indexOn][object])
+            currentSchedule.push(Object.keys(blockArrays[indexOn])[object])
             scheduleLoopSearch(indexOn+1)
         }
     }
@@ -668,8 +749,18 @@ function scheduleLoopSearch(indexOn)
 
 async function displaySchedules()
 {
+    if ($("#showMoreButton") != null)
+    {
+        $("#showMoreButton").remove()
+    }
+
     for (scheduleNum in schedules)
     {
+        if (numberOfSchedulesDisplaying > scheduleNum)
+        {
+            continue
+        }
+
         var scheduleHTML = "<div class='scheduleContainer'><div class='schedule' id='schedule" + (parseInt(scheduleNum)+1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum)+1).toString() + "</h3><h4>"
         for (scheduleBlockNum in schedules[scheduleNum])
         {
@@ -687,7 +778,7 @@ async function displaySchedules()
 
                 var whereSQL = "courseCode=\"" + schedules[scheduleNum][scheduleBlockNum] + "\" and blockNumber=" + (parseInt(scheduleBlockNum)+1).toString() + " and ("
 
-                for (teacherNum in selectedTeachers[selectedCourseCodes.indexOf(schedules[scheduleNum][scheduleBlockNum])])
+                /*for (teacherNum in selectedTeachers[selectedCourseCodes.indexOf(schedules[scheduleNum][scheduleBlockNum])])
                 {
                     if (teacherNum != 0)
                     {
@@ -708,16 +799,36 @@ async function displaySchedules()
                     }
 
                     scheduleHTML += "<br>"
-                })
+                })*/
+
+                let teacherArray = blockArrays[scheduleBlockNum][schedules[scheduleNum][scheduleBlockNum]]
+                for (teacherNum in teacherArray)
+                {
+                    if (teacherNum != 0)
+                    {
+                        scheduleHTML += " or "
+                    }
+                    scheduleHTML += teacherArray[teacherNum]
+                }
+
+                scheduleHTML += "<br>"
             }
         }
 
         scheduleHTML += "</div></div><br><br>"
-
         $("#selection").append(scheduleHTML)
+
+        numberOfSchedulesDisplaying += 1
+        $("#instructions").html("Generating... (" + numberOfSchedulesDisplaying + "/" + schedules.length + ")")
+
+        if (numberOfSchedulesDisplaying % scheduleDisplayCount == 0)
+        {
+            $("#selection").append("<button id='showMoreButton' onclick='displaySchedules()'>Show More</button>")
+            break
+        }
     }
 
-    $("#instructions").html("Done!")
+    $("#instructions").html("Done! (" + numberOfSchedulesDisplaying + "/" + schedules.length + ")")
     $("#instructions").append("  <button onclick='loadCourseSelection()'>Edit</button> <button onclick='reloadPage()'>Clear</button>")
 }
 
@@ -737,11 +848,33 @@ function getScheduleBlockTeachers(whereSQL, completion)
 function getCourseName(courseCode, completion)
 {
     var getCourseNamePromise = new Promise((resolve, reject) => {
-        $.getJSON(dataSource, {"table":"courses", "column":"courseName", "key":"courseCode", "value":courseCode}, function(courseData) {
-            completion(courseData[0]["courseName"])
+        if (Object.keys(courseNames).length == 0 || courseNames[courseCode] == null)
+        {
+            whereSQL = ""
+            for (selectedCourseCodeNum in selectedCourseCodes)
+            {
+                if (selectedCourseCodeNum != 0)
+                {
+                    whereSQL += " or "
+                }
+                whereSQL += "courseCode=\"" + selectedCourseCodes[selectedCourseCodeNum] + "\""
+            }
 
+            $.getJSON(dataSource, {"table":"courses", "column":"courseName,courseCode", "where":whereSQL}, function(courseData) {
+                for (courseNum in courseData)
+                {
+                    courseNames[courseData[courseNum]["courseCode"]] = courseData[courseNum]["courseName"]
+                }
+
+                completion(courseNames[courseCode])
+                resolve()
+            })
+        }
+        else
+        {
+            completion(courseNames[courseCode])
             resolve()
-        })
+        }
     })
 
     return getCourseNamePromise
@@ -750,6 +883,13 @@ function getCourseName(courseCode, completion)
 function reloadPage()
 {
     $(document.body).append('<meta http-equiv="refresh" content="0;url=./index.html">')
+}
+
+//MARK: - Filters
+
+function filterSchedulesBy(filterDictionary)
+{
+
 }
 
 //MARK: - Sessions
