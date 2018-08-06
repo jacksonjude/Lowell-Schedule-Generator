@@ -18,10 +18,10 @@ var selectedOffBlocks = []
 var checkboxesDisabled = false
 var checkboxes = []
 
-var courseNames = []
+var courseNames = {}
 
 $.ajaxSetup({
-  // Disable caching of AJAX responses
+  //Disable caching of AJAX responses
   cache: false
 })
 
@@ -499,24 +499,12 @@ function loadOffBlockSelection()
         }
     }
 
+    while (!updateSelectedOffBlocks && selectedOffBlocks.length != maxClasses+1-selectedCourseCodes.length)
+    {
+        selectedOffBlocks.push([])
+    }
+
     reloadMyOffBlocks()
-
-    var canContinue = true
-    for (offBlockNum in selectedOffBlocks)
-    {
-        for (offBlockNum2 in selectedOffBlocks)
-        {
-            if ((offBlockNum != offBlockNum2 && selectedOffBlocks[offBlockNum].sort().join(',') === selectedOffBlocks[offBlockNum2].sort().join(',')) || selectedOffBlocks[offBlockNum].length == 0 || selectedOffBlocks[offBlockNum2].length == 0)
-            {
-                canContinue = false
-            }
-        }
-    }
-
-    if (canContinue)
-    {
-        $(".myOffBlocks").append("<input id='nextButton' type='button' value='Next' onclick='generateSchedules()'>")
-    }
 
     selectOffBlock("#offBlock1")
 
@@ -633,18 +621,18 @@ var blockArrays = []
 var schedules = []
 var currentSchedule = []
 
+var filters = []
+
 async function generateSchedules()
 {
     blockArrays = []
-    schedules = []
-    currentSchedule = []
-    numberOfSchedulesDisplaying = 0
 
+    $("#selection > *:not('.filterSelectionContainer')").remove()
     $("#instructions").html("Generating...")
 
     for (var i=0; i < maxClasses+1; i++)
     {
-        blockArrays.push([])
+        blockArrays.push({})
     }
 
     for (selectedCourseNum in selectedCourseCodes)
@@ -656,33 +644,27 @@ async function generateSchedules()
     {
         for (offBlockNum in selectedOffBlocks[offBlockArrayNum])
         {
-            blockArrays[selectedOffBlocks[offBlockArrayNum][offBlockNum]-1][offBlockID] = []
+            blockArrays[selectedOffBlocks[offBlockArrayNum][offBlockNum]-1][offBlockID + (parseInt(offBlockArrayNum)).toString()] = {}
         }
     }
 
-    console.log(blockArrays)
+    loadSchedules()
+}
+
+function loadSchedules()
+{
+    schedules = []
+    currentSchedule = []
+    numberOfSchedulesDisplaying = 0
 
     createSchedules()
 
-    $("#selection").empty()
     displaySchedules()
 }
 
 function sortBlockArray(selectedCourseCode)
 {
     var sortBlockArrayPromise = new Promise(function(resolveBlockArray, rejectBlockArray) {
-        /*var whereSQL = "courseCode=\"" + selectedCourseCodes[selectedCourseNum] + "\" and ("
-        for (teacher in selectedTeachers[selectedCourseCodes.indexOf(selectedCourseCode)])
-        {
-            if (teacher != 0)
-            {
-                whereSQL += " or "
-            }
-            whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(selectedCourseCode)][teacher] + "\""
-        }
-        whereSQL += ")"
-
-        $.getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":"blockNumber,count(blockNumber)", "where":whereSQL, "group":"blockNumber", "order":"blockNumber asc"}, function(data) {*/
         getBlockDataFromCourseCodeAndSelectedTeachers(selectedCourseCode, "blockNumber,count(blockNumber),group_concat(teacher separator '--')", function(data) {
             for (countNum in data)
             {
@@ -720,6 +702,7 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
 function createSchedules()
 {
     scheduleLoopSearch(0, [])
+    schedules = multiDimensionalUnique(schedules)
     console.log(schedules)
 }
 
@@ -729,29 +712,84 @@ function scheduleLoopSearch(indexOn)
     {
         for (var object in Object.keys(blockArrays[indexOn]))
         {
-            if (currentSchedule.includes(Object.keys(blockArrays[indexOn])[object]))
+            let courseBlock = Object.keys(blockArrays[indexOn])[object]
+            if (courseBlock.includes(offBlockID))
+            {
+                courseBlock = courseBlock.replace(courseBlock.replace(offBlockID, ""), "")
+            }
+
+            if (currentSchedule.includes(courseBlock) && (courseBlock != offBlockID || countInArray(currentSchedule, courseBlock) >= maxClasses+1-selectedCourseCodes.length))
             {
                 continue
             }
 
-            currentSchedule.push(Object.keys(blockArrays[indexOn])[object])
+            currentSchedule.push(courseBlock)
+            // if (courseBlock.includes(offBlockID))
+            // {
+            //     console.log(currentSchedule)
+            // }
             scheduleLoopSearch(indexOn+1)
         }
     }
     else
     {
-        schedules.push(currentSchedule)
+        let shouldAddSchedule = true
+        for (filterNum in filters)
+        {
+            if (filters[filterNum]["courseCode"] != undefined && filters[filterNum]["blockNumber"] != undefined && filters[filterNum]["teacher"] != undefined)
+            {
+                if (filters[filterNum]["blockNumber"] == "any")
+                {
+                    if (filters[filterNum]["teacher"] != "any" && !blockArrays[currentSchedule.indexOf(filters[filterNum]["courseCode"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))
+                    {
+                        shouldAddSchedule = false
+                        break
+                    }
+                }
+                else if (!(currentSchedule[parseInt(filters[filterNum]["blockNumber"])] == filters[filterNum]["courseCode"] && (filters[filterNum]["teacher"] == null || filters[filterNum]["teacher"] == "any" || blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))))
+                {
+                    shouldAddSchedule = false
+                    break
+                }
+            }
+        }
+
+        if (shouldAddSchedule)
+        {
+            schedules.push(currentSchedule)
+        }
         currentSchedule = currentSchedule.concat()
     }
 
     currentSchedule.pop()
 }
 
-async function displaySchedules()
+function multiDimensionalUnique(arr) {
+    var uniques = []
+    var itemsFound = {}
+    for (var i = 0, l = arr.length; i < l; i++) {
+        var stringified = JSON.stringify(arr[i])
+        if (itemsFound[stringified]) { continue }
+        uniques.push(arr[i])
+        itemsFound[stringified] = true
+    }
+    return uniques
+}
+
+function countInArray(array, what) {
+    return array.filter(item => item == what).length
+}
+
+async function displaySchedules(showMorePressed)
 {
     if ($("#showMoreButton") != null)
     {
         $("#showMoreButton").remove()
+    }
+
+    if (showMorePressed == null || showMorePressed == undefined || !showMorePressed)
+    {
+        $("#selection > *:not('.filterSelectionContainer')").remove()
     }
 
     for (scheduleNum in schedules)
@@ -776,39 +814,31 @@ async function displaySchedules()
                     scheduleHTML += courseName + " - "
                 })
 
-                var whereSQL = "courseCode=\"" + schedules[scheduleNum][scheduleBlockNum] + "\" and blockNumber=" + (parseInt(scheduleBlockNum)+1).toString() + " and ("
-
-                /*for (teacherNum in selectedTeachers[selectedCourseCodes.indexOf(schedules[scheduleNum][scheduleBlockNum])])
+                let filterForBlock = null
+                for (filterNum in filters)
                 {
-                    if (teacherNum != 0)
+                    if ((filters[filterNum]["blockNumber"] == scheduleBlockNum && filters[filterNum]["teacher"] != undefined) || (filters[filterNum]["blockNumber"] == "any" && filters[filterNum]["courseCode"] == schedules[scheduleNum][scheduleBlockNum]))
                     {
-                        whereSQL += " or "
+                        filterForBlock = filters[filterNum]
+                        break
                     }
-                    whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(schedules[scheduleNum][scheduleBlockNum])][teacherNum] + "\""
                 }
-                whereSQL += ")"
 
-                await getScheduleBlockTeachers(whereSQL, function(data) {
-                    for (teacherNum in data)
+                if (filterForBlock != null && filterForBlock["teacher"] != "any")
+                {
+                    scheduleHTML += filterForBlock["teacher"]
+                }
+                else
+                {
+                    let teacherArray = blockArrays[scheduleBlockNum][schedules[scheduleNum][scheduleBlockNum]]
+                    for (teacherNum in teacherArray)
                     {
                         if (teacherNum != 0)
                         {
                             scheduleHTML += " or "
                         }
-                        scheduleHTML += data[teacherNum]["teacher"]
+                        scheduleHTML += teacherArray[teacherNum]
                     }
-
-                    scheduleHTML += "<br>"
-                })*/
-
-                let teacherArray = blockArrays[scheduleBlockNum][schedules[scheduleNum][scheduleBlockNum]]
-                for (teacherNum in teacherArray)
-                {
-                    if (teacherNum != 0)
-                    {
-                        scheduleHTML += " or "
-                    }
-                    scheduleHTML += teacherArray[teacherNum]
                 }
 
                 scheduleHTML += "<br>"
@@ -823,13 +853,15 @@ async function displaySchedules()
 
         if (numberOfSchedulesDisplaying % scheduleDisplayCount == 0)
         {
-            $("#selection").append("<button id='showMoreButton' onclick='displaySchedules()'>Show More</button>")
+            $("#selection").append("<button id='showMoreButton' onclick='displaySchedules(true)'>Show More</button>")
             break
         }
     }
 
-    $("#instructions").html("Done! (" + numberOfSchedulesDisplaying + "/" + schedules.length + ")")
+    $("#instructions").html("Done! (Showing " + numberOfSchedulesDisplaying + "/" + schedules.length + ")")
     $("#instructions").append("  <button onclick='loadCourseSelection()'>Edit</button> <button onclick='reloadPage()'>Clear</button>")
+
+    setupFilterMenu()
 }
 
 function getScheduleBlockTeachers(whereSQL, completion)
@@ -887,9 +919,276 @@ function reloadPage()
 
 //MARK: - Filters
 
-function filterSchedulesBy(filterDictionary)
+function setupFilterMenu()
 {
+    var selection = $("#selection")
+    if ($(".filterSelectionContainer") != null)
+    {
+        $(".filterSelectionContainer").remove()
+    }
+    selection.prepend("<div class='filterSelectionContainer'><div class='filterSelection'></div></div>")
 
+    var filterSelection = $(".filterSelection")
+    filterSelection.append('<h2 style="color: white;">Filters</h2>')
+
+    if (filters.concat().reverse()[0] == undefined || filters.concat().reverse()[0] == null || (Object.keys(filters.concat().reverse()[0]).length > 0 && !justRemovedFilter))
+    {
+        filters.push({})
+    }
+
+    if (justRemovedFilter)
+    {
+        justRemovedFilter = false
+    }
+
+    for (var filterNum=0; filterNum < filters.length; filterNum++)
+    {
+        addFilterSelectHTML(filterNum)
+
+        $("#filterCourse" + filterNum + " option[value='" + filters[filterNum]["courseCode"] + "']").prop('selected', true)
+        $("#filterBlock" + filterNum + " option[value='" + filters[filterNum]["blockNumber"] + "']").prop('selected', true)
+        $("#filterTeacher" + filterNum + " option[value='" + window.btoa(filters[filterNum]["teacher"]) + "']").prop('selected', true)
+    }
+
+    filterSelection.append("<button id='addFilterButton' onclick='addFilter()'>Add Filter</button>")
+    filterSelection.append("<button id='removeFilterButton' onclick='removeFilter()'>Remove Filter</button>")
+    filterSelection.append("<span id='filterBreaks'><br><br></span>")
+}
+
+function addFilterSelectHTML(filterNum)
+{
+    var filterSelection = $(".filterSelection")
+    var filterRow = $("<span id=filterRow" + filterNum + ">")
+
+    let courseFilterSelect = $("<select id='filterCourse" + filterNum.toString() + "'>")
+    courseFilterSelect.append($('<option>', {
+        value : "none",
+        text : "None"
+    }))
+    $.each(courseNames, function (code, name) {
+        courseFilterSelect.append($('<option>', {
+            value : code,
+            text : name
+        }))
+    })
+    courseFilterSelect.append($('<option>', {
+        value : offBlockID,
+        text : "Off Block"
+    }))
+    courseFilterSelect.on('change', function (e) {
+        var courseSelected = this.value
+        var filterNumber = parseInt($(this).attr("id").replace("filterCourse", ""))
+        if (filters[filterNumber]["courseCode"] != courseSelected)
+        {
+            $("#filterBlock" + filterNumber.toString()).empty()
+            addDefaultFilterBlockOptions($("#filterBlock" + filterNumber.toString()))
+
+            $("#filterTeacher" + filterNumber.toString()).empty()
+            addDefaultFilterTeacherOptions($("#filterTeacher" + filterNumber.toString()))
+
+            if (courseSelected != "none")
+            {
+                filters[filterNumber]["courseCode"] = courseSelected
+            }
+            else
+            {
+                delete filters[filterNumber]["courseCode"]
+            }
+
+            delete filters[filterNumber]["blockNumber"]
+            delete filters[filterNumber]["teacher"]
+
+            addFilterBlockSelectionOptions($("#filterBlock" + filterNumber.toString()), filterNumber)
+            addFilterTeacherSelectionOptions($("#filterTeacher" + filterNumber.toString()), filterNumber)
+
+            if (courseSelected == "none")
+            {
+                loadSchedules()
+            }
+        }
+    })
+    filterRow.append(courseFilterSelect)
+
+    let blockFilterSelect = $("<select id='filterBlock" + filterNum.toString() + "'>")
+    addDefaultFilterBlockOptions(blockFilterSelect)
+    addFilterBlockSelectionOptions(blockFilterSelect, filterNum)
+
+    blockFilterSelect.on('change', function (e) {
+        var blockSelected = this.value
+        var filterNumber = parseInt($(this).attr("id").replace("filterBlock", ""))
+        if (filters[filterNumber]["blockNumber"] != blockSelected)
+        {
+            $("#filterTeacher" + filterNumber.toString()).empty()
+            addDefaultFilterTeacherOptions($("#filterTeacher" + filterNumber.toString()))
+
+            if (blockSelected != "none")
+            {
+                filters[filterNumber]["blockNumber"] = blockSelected
+            }
+            else
+            {
+                delete filters[filterNumber]["blockNumber"]
+            }
+
+            delete filters[filterNumber]["teacher"]
+
+            addFilterTeacherSelectionOptions($("#filterTeacher" + filterNumber.toString()), filterNumber)
+
+            if (blockSelected == "none")
+            {
+                loadSchedules()
+            }
+        }
+    })
+    filterRow.append(blockFilterSelect)
+
+    let teacherFilterSelect = $("<select id='filterTeacher" + filterNum.toString() + "'>")
+    addDefaultFilterTeacherOptions(teacherFilterSelect)
+    addFilterTeacherSelectionOptions(teacherFilterSelect, filterNum)
+
+    teacherFilterSelect.on('change', function (e) {
+        var filterNumber = parseInt($(this).attr("id").replace("filterTeacher", ""))
+        var teacherSelected = this.value
+        var filterTeacherChanged = (filters[filterNumber]["teacher"] != window.atob(teacherSelected))
+        if (teacherSelected != "none")
+        {
+            filters[filterNumber]["teacher"] = window.atob(teacherSelected)
+        }
+        else
+        {
+            delete filters[filterNumber]["teacher"]
+        }
+
+        if (filterTeacherChanged)
+        {
+            loadSchedules()
+        }
+    })
+    filterRow.append(teacherFilterSelect)
+
+    filterSelection.append(filterRow)
+    filterSelection.append("<span id='filterBreak" + filterNum + "'><br></span>")
+}
+
+function addFilterBlockSelectionOptions(blockFilterSelect, filterNum)
+{
+    if (filters[filterNum]["courseCode"] != offBlockID)
+    {
+        for (var blockNum=0; blockNum < maxClasses+1; blockNum++)
+        {
+            if (filters[filterNum]["courseCode"] != null && Object.keys(blockArrays[blockNum]).includes(filters[filterNum]["courseCode"]))
+            {
+                let blockName = "Block " + (parseInt(blockNum+1)).toString()
+                blockFilterSelect.append($('<option>', {
+                    value : blockNum,
+                    text : blockName
+                }))
+            }
+        }
+    }
+    else
+    {
+        let offBlockRegex = RegExp(offBlockID + "\\d+")
+        for (var blockNum=0; blockNum < maxClasses+1; blockNum++)
+        {
+            if (Object.keys(blockArrays[blockNum]).some(courseToTest => offBlockRegex.test(courseToTest)))
+            {
+                let blockName = "Block " + (parseInt(blockNum+1)).toString()
+                blockFilterSelect.append($('<option>', {
+                    value : blockNum,
+                    text : blockName
+                }))
+            }
+        }
+    }
+}
+
+function addFilterTeacherSelectionOptions(teacherFilterSelect, filterNum)
+{
+    var teachersToSelect
+    if (filters[filterNum]["blockNumber"] != "any")
+    {
+        teachersToSelect = (filters[filterNum]["courseCode"] != null && filters[filterNum]["courseCode"] != offBlockID && filters[filterNum]["blockNumber"] != null) ? blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]] : []
+    }
+    else if (filters[filterNum]["courseCode"] != offBlockID)
+    {
+        teachersToSelect = selectedTeachers[selectedCourseCodes.indexOf(filters[filterNum]["courseCode"])]
+    }
+    else
+    {
+        teachersToSelect = []
+    }
+    for (var teacherNum=0; teacherNum < teachersToSelect.length; teacherNum++)
+    {
+        let teacherName = teachersToSelect[teacherNum]
+        teacherFilterSelect.append($('<option>', {
+            value : window.btoa(teacherName),
+            text : teacherName
+        }))
+    }
+}
+
+function addDefaultFilterBlockOptions(blockFilterSelect)
+{
+    blockFilterSelect.append($('<option>', {
+        value : "none",
+        text : "None"
+    }))
+    blockFilterSelect.append($('<option>', {
+        value : "any",
+        text : "Any"
+    }))
+}
+
+function addDefaultFilterTeacherOptions(teacherFilterSelect)
+{
+    teacherFilterSelect.append($('<option>', {
+        value : "none",
+        text : "None"
+    }))
+    teacherFilterSelect.append($('<option>', {
+        value : window.btoa("any"),
+        text : "Any"
+    }))
+}
+
+function addFilter()
+{
+    var filterSelection = $(".filterSelection")
+    $("#addFilterButton").remove()
+    $("#removeFilterButton").remove()
+    $("#filterBreaks").remove()
+
+    filters.push({})
+
+    addFilterSelectHTML(filters.length-1)
+
+    filterSelection.append("<button id='addFilterButton' onclick='addFilter()'>Add Filter</button>")
+    filterSelection.append("<button id='removeFilterButton' onclick='removeFilter()'>Remove Filter</button>")
+    filterSelection.append("<span id='filterBreaks'><br><br></span>")
+}
+
+var justRemovedFilter = false
+
+function removeFilter()
+{
+    $("#filterRow" + (parseInt(filters.length-1)).toString()).remove()
+    $("#filterBreak" + (parseInt(filters.length-1)).toString()).remove()
+
+    var filterToRemove = filters.concat().reverse()[0]
+    var shouldReload = (filterToRemove["courseCode"] != undefined && filterToRemove["blockNumber"] != undefined && filterToRemove["teacher"] != undefined)
+
+    filters.splice(filters.length-1, 1)
+
+    if (shouldReload)
+    {
+        justRemovedFilter = true
+        loadSchedules()
+    }
+    else if (filters.length == 0)
+    {
+        addFilter()
+    }
 }
 
 //MARK: - Sessions

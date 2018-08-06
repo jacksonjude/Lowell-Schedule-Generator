@@ -26,7 +26,7 @@
     -webkit-text-stroke-color: black;
 }
 
-.departmentScrollerContainer, .classSelectionContainer, .myScheduleContainer, .teacherSelectionContainer, .courseScrollerContainer, .myTeachersContainer, .offBlockScrollerContainer, .offBlockSelectionContainer, .myOffBlocksContainer, .scheduleContainer
+.departmentScrollerContainer, .classSelectionContainer, .myScheduleContainer, .teacherSelectionContainer, .courseScrollerContainer, .myTeachersContainer, .offBlockScrollerContainer, .offBlockSelectionContainer, .myOffBlocksContainer, .scheduleContainer, .filterSelectionContainer
 {
     position: relative;
     display: inline-block;
@@ -34,7 +34,7 @@
     vertical-align: top;
 }
 
-.departmentScroller, .classSelection, .mySchedule, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection, .schedule
+.departmentScroller, .classSelection, .mySchedule, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection, .schedule, .filterSelection
 {
     color: WHITE;
     border:1px solid white;
@@ -44,9 +44,15 @@
     border-radius: 5px;
 }
 
-.classSelection, .teacherSelection, .offBlockSelection
+.classSelection, .teacherSelection, .offBlockSelection, .filterSelection
 {
     min-width: 400;
+}
+
+.filterSelectionContainer
+{
+    position: absolute;
+    right: 20px;
 }
 
 .mySchedule, .myTeachers
