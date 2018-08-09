@@ -26,7 +26,7 @@
     -webkit-text-stroke-color: black;
 }
 
-.departmentScrollerContainer, .classSelectionContainer, .myScheduleContainer, .teacherSelectionContainer, .courseScrollerContainer, .myTeachersContainer, .offBlockScrollerContainer, .offBlockSelectionContainer, .myOffBlocksContainer, .scheduleContainer, .filterSelectionContainer
+.departmentScrollerContainer, .classSelectionContainer, .myCoursesContainer, .teacherSelectionContainer, .courseScrollerContainer, .myTeachersContainer, .offBlockScrollerContainer, .offBlockSelectionContainer, .myOffBlocksContainer, .scheduleContainer, .filterSelectionContainer
 {
     position: relative;
     display: inline-block;
@@ -34,7 +34,7 @@
     vertical-align: top;
 }
 
-.departmentScroller, .classSelection, .mySchedule, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection, .schedule, .filterSelection
+.departmentScroller, .classSelection, .myCourses, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection, .schedule, .filterSelection
 {
     color: WHITE;
     border:1px solid white;
@@ -55,7 +55,7 @@
     right: 20px;
 }
 
-.mySchedule, .myTeachers
+.myCourses, .myTeachers
 {
     min-height: 220;
     min-width: 250;
@@ -89,4 +89,16 @@
     top:20;
     right:20;
     vertical-align: top;
+}
+
+.favoriteButton
+{
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border: none;
+    outline: none;
+    max-width: 30px;
+    max-height: 30px;
+    background: url('assets/favoriteIcon.png');
 }

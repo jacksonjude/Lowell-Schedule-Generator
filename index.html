@@ -1,7 +1,11 @@
 <html>
     <div class="background"></div>
     <head>
+        <title>Schedule Generator</title>
         <link rel="stylesheet" href="./style.css"></link>
+        <?php
+            echo '<link rel="shortcut icon" href="./assets/schedulegen.ico?t=' . time() . '" />';
+        ?>
         <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
         <script src="model.js"></script>
         <script src="sha256.js"></script>
@@ -10,7 +14,7 @@
     <body>
         <h1 class="outline" style="font-weight: bold; font-size: 64;">Lowell Schedule Generator</h1>
         <div style="padding-left: 20px; position: relative; display: inline-block;"><h2 id="instructions" style="padding-left: 10px; padding-top: 5px; padding-bottom: 5px; padding-right: 10px; border:1px solid white; background-color: #444444; color: white; border-radius: 5px;"></h2></div>
-        <span style="position: absolute; top: 20; right: 20; vertical-align: top; color: white;"><input id="sessionID" placeholder="Session ID" autocomplete="off"><br><button onclick="saveSession($('#sessionID').val())">Save</button><button onclick="loadSession($('#sessionID').val())">Load</button></span>
+        <span style="position: absolute; top: 20; right: 20; vertical-align: top; color: white;"><input id="sessionID" placeholder="Session ID" autocomplete="off"><br><button onclick="saveSession($('#sessionID').val())">Save</button><button onclick="loadSession($('#sessionID').val(), function() {loadCourseSelection()})">Load</button><button onclick="loadSession($('#sessionID').val(), function() {reloadThenShowFavorites()})">Fav</button></span>
         <br>
         <div id="selection"></div>
     </body>

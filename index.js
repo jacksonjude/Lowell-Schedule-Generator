@@ -1,5 +1,9 @@
-const dataSource = "https://jjcooley.ddns.net/lowellscheduledatabase/query/"
-const sessionSource = "https://jjcooley.ddns.net/lowellscheduledatabase/session/"
+//const dataSource = "https://jjcooley.ddns.net/lowellscheduledatabase/query/"
+//const sessionSource = "https://jjcooley.ddns.net/lowellscheduledatabase/session/"
+
+const rootHost = window.location.href.split("://")[0] + "://" + window.location.hostname
+const dataSource = rootHost + "/lowellscheduledatabase/query/"
+const sessionSource = rootHost + "/lowellscheduledatabase/session/"
 
 const maxClasses = 7
 const minClasses = 5
@@ -33,6 +37,8 @@ $(function() {
 
 function loadCourseSelection()
 {
+    showingFavorites = false
+
     //Reset checkboxes
     checkboxes = []
     checkboxesDisabled = false
@@ -59,11 +65,11 @@ function loadCourseSelection()
     //Add selected courses if any exist
     for (courseCodeNum in selectedCourseCodes)
     {
-        addToMySchedule(selectedCourseCodes[courseCodeNum])
+        addToMyCourses(selectedCourseCodes[courseCodeNum])
     }
     if (selectedCourseCodes.length >= minClasses)
     {
-        $(".mySchedule").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
+        $(".myCourses").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
     }
 }
 
@@ -76,7 +82,7 @@ function setupCourseSelectionElements()
 
     selection.append("<div class='departmentScrollerContainer'></div>")
     selection.append("<div class=classSelectionContainer><div class='classSelection'></div></div>")
-    selection.append("<div class=myScheduleContainer><div class='mySchedule'><h3><div id='myScheduleTitle'>My Schedule</div></h3></div></div>")
+    selection.append("<div class=myCoursesContainer><div class='myCourses'><h3><div id='myCoursesTitle'>My Courses</div></h3></div></div>")
 
     $("#instructions").html("Choose your classes and then click \"Next\"")
 }
@@ -184,12 +190,12 @@ function checkedCourse(checkbox)
         }
 
         //Add the course to the selected course container
-        addToMySchedule($(checkbox).attr("id"))
+        addToMyCourses($(checkbox).attr("id"))
 
         //Add a nextButton if there are enough selectedCourses
         if (selectedCourseCodes.length == minClasses)
         {
-            $(".mySchedule").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
+            $(".myCourses").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
         }
     }
     else
@@ -218,28 +224,28 @@ function checkedCourse(checkbox)
         }
 
         //Remove the course from the selected course container
-        removeFromMySchedule($(checkbox).attr("id"))
+        removeFromMyCourses($(checkbox).attr("id"))
 
         //Remove the nextButton if there aren't enough classes
         if (selectedCourseCodes.length == minClasses-1)
         {
-            $(".mySchedule").find("#nextButton").remove()
+            $(".myCourses").find("#nextButton").remove()
         }
     }
 }
 
-function addToMySchedule(courseCode)
+function addToMyCourses(courseCode)
 {
     //Get the course name and the department number
     $.getJSON(dataSource, {"table":"courses", "column":"courseName,departmentNumber", "key":"courseCode", "value":courseCode}, function(courseData) {
-        $(".mySchedule").append("<div id=" + courseCode + ">" + departments[parseInt(courseData[0]["departmentNumber"])-1].departmentTitle + " - " + courseData[0]["courseName"] + "</div>")
+        $(".myCourses").append("<div id=" + courseCode + ">" + departments[parseInt(courseData[0]["departmentNumber"])-1].departmentTitle + " - " + courseData[0]["courseName"] + "</div>")
     })
 }
 
-function removeFromMySchedule(courseCode)
+function removeFromMyCourses(courseCode)
 {
     //Remove from the schedule
-    $(".mySchedule").find("#" + courseCode).remove()
+    $(".myCourses").find("#" + courseCode).remove()
 }
 
 //MARK: - Teacher Selection
@@ -615,19 +621,32 @@ function selectAllOffBlocks()
 
 const offBlockID = "OFFBLOCK"
 const scheduleDisplayCount = 10
-var numberOfSchedulesDisplaying = 0
 
 var blockArrays = []
+var filters = []
+var favoriteSchedules = {}
+
 var schedules = []
 var currentSchedule = []
+var numberOfSchedulesDisplaying = 0
 
-var filters = []
+var showingFavorites = false
 
-async function generateSchedules()
+async function generateSchedules(completion)
 {
     blockArrays = []
+    var filtersToKeep = []
+    for (filterNum in filters)
+    {
+        if (selectedCourseCodes.includes(filters[filterNum]["courseCode"]) && selectedTeachers[selectedCourseCodes.indexOf(filters[filterNum]["courseCode"])].includes(filters[filterNum]["teacher"]))
+        {
+            filtersToKeep.push(filters[filterNum])
+        }
+    }
+    filters = filtersToKeep
 
-    $("#selection > *:not('.filterSelectionContainer')").remove()
+    //$("#selection > *:not('.filterSelectionContainer')").remove()
+    $("#selection").empty()
     $("#instructions").html("Generating...")
 
     for (var i=0; i < maxClasses+1; i++)
@@ -648,10 +667,10 @@ async function generateSchedules()
         }
     }
 
-    loadSchedules()
+    loadSchedules(completion)
 }
 
-function loadSchedules()
+function loadSchedules(completion)
 {
     schedules = []
     currentSchedule = []
@@ -659,7 +678,7 @@ function loadSchedules()
 
     createSchedules()
 
-    displaySchedules()
+    displaySchedules(null, completion)
 }
 
 function sortBlockArray(selectedCourseCode)
@@ -780,7 +799,7 @@ function countInArray(array, what) {
     return array.filter(item => item == what).length
 }
 
-async function displaySchedules(showMorePressed)
+async function displaySchedules(showMorePressed, completion)
 {
     if ($("#showMoreButton") != null)
     {
@@ -789,7 +808,8 @@ async function displaySchedules(showMorePressed)
 
     if (showMorePressed == null || showMorePressed == undefined || !showMorePressed)
     {
-        $("#selection > *:not('.filterSelectionContainer')").remove()
+        //$("#selection > *:not('.filterSelectionContainer')").remove()
+        $("#selection").empty()
     }
 
     for (scheduleNum in schedules)
@@ -800,18 +820,19 @@ async function displaySchedules(showMorePressed)
         }
 
         var scheduleHTML = "<div class='scheduleContainer'><div class='schedule' id='schedule" + (parseInt(scheduleNum)+1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum)+1).toString() + "</h3><h4>"
+        let thisScheduleInnerHTML = ""
         for (scheduleBlockNum in schedules[scheduleNum])
         {
             if (schedules[scheduleNum][scheduleBlockNum] == offBlockID)
             {
-                scheduleHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + ": Off Block<br>"
+                thisScheduleInnerHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + ": Off Block<br>"
             }
             else
             {
-                scheduleHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + ": "
+                thisScheduleInnerHTML += "Block " + (parseInt(scheduleBlockNum)+1).toString() + ": "
 
                 await getCourseName(schedules[scheduleNum][scheduleBlockNum], function(courseName) {
-                    scheduleHTML += courseName + " - "
+                    thisScheduleInnerHTML += courseName + " - "
                 })
 
                 let filterForBlock = null
@@ -826,7 +847,7 @@ async function displaySchedules(showMorePressed)
 
                 if (filterForBlock != null && filterForBlock["teacher"] != "any")
                 {
-                    scheduleHTML += filterForBlock["teacher"]
+                    thisScheduleInnerHTML += filterForBlock["teacher"]
                 }
                 else
                 {
@@ -835,17 +856,26 @@ async function displaySchedules(showMorePressed)
                     {
                         if (teacherNum != 0)
                         {
-                            scheduleHTML += " or "
+                            thisScheduleInnerHTML += " or "
                         }
-                        scheduleHTML += teacherArray[teacherNum]
+                        thisScheduleInnerHTML += teacherArray[teacherNum]
                     }
                 }
 
-                scheduleHTML += "<br>"
+                thisScheduleInnerHTML += "<br>"
             }
         }
 
-        scheduleHTML += "</div></div><br><br>"
+        scheduleHTML += thisScheduleInnerHTML + "</h4>"
+
+        let imageURL = "assets/"
+
+        let favoriteScheduleID = SHA256(thisScheduleInnerHTML)
+        imageURL += (Object.keys(favoriteSchedules).includes(favoriteScheduleID)) ? "favoriteIconPressed.png" : "favoriteIcon.png"
+
+        scheduleHTML += "<input id='" + favoriteScheduleID + "' onclick='toggleFavoriteSchedule(this)' type='image' src='" + imageURL + "' class='favoriteButton' />"
+        scheduleHTML += "</div>"
+        scheduleHTML += "</div><br><br>"
         $("#selection").append(scheduleHTML)
 
         numberOfSchedulesDisplaying += 1
@@ -859,9 +889,11 @@ async function displaySchedules(showMorePressed)
     }
 
     $("#instructions").html("Done! (Showing " + numberOfSchedulesDisplaying + "/" + schedules.length + ")")
-    $("#instructions").append("  <button onclick='loadCourseSelection()'>Edit</button> <button onclick='reloadPage()'>Clear</button>")
+    $("#instructions").append(" " + (!showingFavorites ? " <button onclick='loadCourseSelection()'>Edit</button>" : "") + " <button onclick='reloadPage()'>Clear</button>" + " <button onclick='toggleFavoriteFilter()'>" + (showingFavorites ? "Hide Favorites" : "Show Favorites") + "</button>")
 
-    setupFilterMenu()
+    !showingFavorites ? setupFilterMenu() : false
+
+    completion ? completion() : false
 }
 
 function getScheduleBlockTeachers(whereSQL, completion)
@@ -917,7 +949,32 @@ function reloadPage()
     $(document.body).append('<meta http-equiv="refresh" content="0;url=./index.html">')
 }
 
+function toggleFavoriteSchedule(inputElement)
+{
+    Object.keys(favoriteSchedules).includes($(inputElement).attr("id")) ? delete favoriteSchedules[$(inputElement).attr("id")] : favoriteSchedules[$(inputElement).attr("id")] = schedules[parseInt($(inputElement).parent().attr("id").replace("schedule", ""))-1]
+
+    $(inputElement).attr("src", "assets/" + (Object.keys(favoriteSchedules).includes($(inputElement).attr("id")) ? "favoriteIconPressed" : "favoriteIcon") + ".png")
+}
+
+function toggleFavoriteFilter()
+{
+    showingFavorites = !showingFavorites
+    showingFavorites ? (schedules = Object.values(favoriteSchedules), numberOfSchedulesDisplaying = 0, displaySchedules()) : (loadSchedules())
+}
+
+function reloadThenShowFavorites()
+{
+    generateSchedules(function() {
+        showingFavorites = true
+        schedules = Object.values(favoriteSchedules)
+        numberOfSchedulesDisplaying = 0
+        displaySchedules()
+    })
+}
+
 //MARK: - Filters
+
+var justRemovedFilter = false
 
 function setupFilterMenu()
 {
@@ -950,9 +1007,10 @@ function setupFilterMenu()
         $("#filterTeacher" + filterNum + " option[value='" + window.btoa(filters[filterNum]["teacher"]) + "']").prop('selected', true)
     }
 
+    filterSelection.append("<span id='filterBreaks0'><br></span>")
     filterSelection.append("<button id='addFilterButton' onclick='addFilter()'>Add Filter</button>")
     filterSelection.append("<button id='removeFilterButton' onclick='removeFilter()'>Remove Filter</button>")
-    filterSelection.append("<span id='filterBreaks'><br><br></span>")
+    filterSelection.append("<span id='filterBreaks1'><br><br></span>")
 }
 
 function addFilterSelectHTML(filterNum)
@@ -986,6 +1044,8 @@ function addFilterSelectHTML(filterNum)
             $("#filterTeacher" + filterNumber.toString()).empty()
             addDefaultFilterTeacherOptions($("#filterTeacher" + filterNumber.toString()))
 
+            var shouldReload = (filters[filterNumber]["courseCode"] != undefined && filters[filterNumber]["blockNumber"] != undefined && filters[filterNumber]["teacher"] != undefined)
+
             if (courseSelected != "none")
             {
                 filters[filterNumber]["courseCode"] = courseSelected
@@ -1001,7 +1061,7 @@ function addFilterSelectHTML(filterNum)
             addFilterBlockSelectionOptions($("#filterBlock" + filterNumber.toString()), filterNumber)
             addFilterTeacherSelectionOptions($("#filterTeacher" + filterNumber.toString()), filterNumber)
 
-            if (courseSelected == "none")
+            if (shouldReload)
             {
                 loadSchedules()
             }
@@ -1030,11 +1090,16 @@ function addFilterSelectHTML(filterNum)
                 delete filters[filterNumber]["blockNumber"]
             }
 
-            delete filters[filterNumber]["teacher"]
-
             addFilterTeacherSelectionOptions($("#filterTeacher" + filterNumber.toString()), filterNumber)
 
-            if (blockSelected == "none")
+            var shouldReload = (filters[filterNumber]["teacher"] != undefined)
+
+            if (blockSelected == "none" || blockSelected == "any" || !(filters[filterNumber]["teacher"] == "any" || (filters[filterNumber]["courseCode"] != undefined && filters[filterNumber]["blockNumber"] != undefined && blockArrays[parseInt(filters[filterNumber]["blockNumber"])][filters[filterNumber]["courseCode"]].includes(filters[filterNumber]["teacher"]))))
+            {
+                delete filters[filterNumber]["teacher"]
+            }
+
+            if (shouldReload)
             {
                 loadSchedules()
             }
@@ -1155,20 +1220,20 @@ function addDefaultFilterTeacherOptions(teacherFilterSelect)
 function addFilter()
 {
     var filterSelection = $(".filterSelection")
+    $("#filterBreaks0").remove()
     $("#addFilterButton").remove()
     $("#removeFilterButton").remove()
-    $("#filterBreaks").remove()
+    $("#filterBreaks1").remove()
 
     filters.push({})
 
     addFilterSelectHTML(filters.length-1)
 
+    filterSelection.append("<span id='filterBreaks0'><br></span>")
     filterSelection.append("<button id='addFilterButton' onclick='addFilter()'>Add Filter</button>")
     filterSelection.append("<button id='removeFilterButton' onclick='removeFilter()'>Remove Filter</button>")
-    filterSelection.append("<span id='filterBreaks'><br><br></span>")
+    filterSelection.append("<span id='filterBreaks1'><br><br></span>")
 }
-
-var justRemovedFilter = false
 
 function removeFilter()
 {
@@ -1196,25 +1261,32 @@ function removeFilter()
 function saveSession(id)
 {
     console.log("Saving Data...")
-    console.log({"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(selectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks)})
 
-    $.post(sessionSource, {"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(selectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks)}, function(data) {
+    var dataToSave = {"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(selectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks), "filtersJSON":JSON.stringify(filters), "favoriteSchedulesJSON":JSON.stringify(favoriteSchedules)}
+    console.log(dataToSave)
+
+    $.post(sessionSource, dataToSave, function(data) {
         console.log("Data Saved!")
     })
 }
 
-function loadSession(id)
+function loadSession(id, completion)
 {
     $.post(sessionSource, {"command":"load", "id":id}, function(data) {
         loadSessionJSON(data)
 
-        loadCourseSelection()
+        completion ? completion() : false
     })
 }
 
 function loadSessionJSON(json)
 {
-    selectedCourseCodes = JSON.parse(json[0]["coursesJSON"])
-    selectedTeachers = JSON.parse(json[0]["teachersJSON"])
-    selectedOffBlocks = JSON.parse(json[0]["offBlocksJSON"])
+    if (json != null && json.length >= 1)
+    {
+        selectedCourseCodes = JSON.parse(json[0]["coursesJSON"] ? json[0]["coursesJSON"] : "[]")
+        selectedTeachers = JSON.parse(json[0]["teachersJSON"] ? json[0]["teachersJSON"] : "[]")
+        selectedOffBlocks = JSON.parse(json[0]["offBlocksJSON"] ? json[0]["offBlocksJSON"] : "[]")
+        filters = JSON.parse(json[0]["filtersJSON"] ? json[0]["filtersJSON"] : "[]")
+        favoriteSchedules = JSON.parse(json[0]["favoriteSchedulesJSON"] ? json[0]["favoriteSchedulesJSON"] : "[]")
+    }
 }
