@@ -30,7 +30,6 @@ $.ajaxSetup({
 })
 
 $(function() {
-    console.log("Loading...")
     loadCourseSelection()
 })
 
