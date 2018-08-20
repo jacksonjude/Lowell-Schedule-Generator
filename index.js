@@ -1,9 +1,9 @@
-//const dataSource = "https://jjcooley.ddns.net/lowellscheduledatabase/query/"
-//const sessionSource = "https://jjcooley.ddns.net/lowellscheduledatabase/session/"
+const dataSource = "https://jjcooley.ddns.net/lowellscheduledatabase/query/"
+const sessionSource = "https://jjcooley.ddns.net/lowellscheduledatabase/session/"
 
-const rootHost = window.location.href.split("://")[0] + "://" + window.location.hostname
-const dataSource = rootHost + "/lowellscheduledatabase/query/"
-const sessionSource = rootHost + "/lowellscheduledatabase/session/"
+//const rootHost = window.location.href.split("://")[0] + "://" + window.location.hostname
+//const dataSource = rootHost + "/lowellscheduledatabase/query/"
+//const sessionSource = rootHost + "/lowellscheduledatabase/session/"
 
 const maxClasses = 7
 const minClasses = 5
