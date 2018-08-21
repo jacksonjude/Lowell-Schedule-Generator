@@ -1,5 +1,5 @@
-const dataSource = "https://73.222.6.8/lowellscheduledatabase/query/"
-const sessionSource = "https://73.222.6.8/lowellscheduledatabase/session/"
+const dataSource = "http://73.222.6.8/lowellscheduledatabase/query/"
+const sessionSource = "http://73.222.6.8/lowellscheduledatabase/session/"
 
 //const rootHost = window.location.href.split("://")[0] + "://" + window.location.hostname
 //const dataSource = rootHost + "/lowellscheduledatabase/query/"
