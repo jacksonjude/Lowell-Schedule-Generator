@@ -1,5 +1,5 @@
-const dataSource = "http://jjcooley.ddns.net/lowellscheduledatabase/query/"
-const sessionSource = "http://jjcooley.ddns.net/lowellscheduledatabase/session/"
+const dataSource = "https://jjcooley.ddns.net/lowellscheduledatabase/query/"
+const sessionSource = "https://jjcooley.ddns.net/lowellscheduledatabase/session/"
 
 //const rootHost = window.location.href.split("://")[0] + "://" + window.location.hostname
 //const dataSource = rootHost + "/lowellscheduledatabase/query/"
