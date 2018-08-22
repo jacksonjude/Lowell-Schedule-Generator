@@ -1,9 +1,9 @@
-//const dataSource = "http://73.222.6.8/lowellscheduledatabase/query/"
-//const sessionSource = "http://73.222.6.8/lowellscheduledatabase/session/"
+const dataSource = "https://schedulegen.port0.org/lowellscheduledatabase/query/"
+const sessionSource = "https://schedulegen.port0.org/lowellscheduledatabase/session/"
 
-const rootHost = window.location.href.split("://")[0] + "://" + window.location.hostname
-const dataSource = rootHost + "/lowellscheduledatabase/query/"
-const sessionSource = rootHost + "/lowellscheduledatabase/session/"
+//const rootHost = window.location.href.split("://")[0] + "://" + window.location.hostname
+//const dataSource = rootHost + "/lowellscheduledatabase/query/"
+//const sessionSource = rootHost + "/lowellscheduledatabase/session/"
 
 const maxClasses = 7
 const minClasses = 5
