@@ -709,7 +709,7 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
         {
             whereSQL += " or "
         }
-        whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(courseCode)][teacher].replace("\"", "\\\"") + "\""
+        whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(courseCode)][teacher].replace(new RegExp("\"", 'g'), "\\\"") + "\""
     }
     whereSQL += ")"
 
