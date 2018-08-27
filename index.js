@@ -1262,7 +1262,7 @@ function saveSession(id)
 {
     console.log("Saving Data...")
 
-    var checkedSelectedTeachers = selectedTeachers
+    var checkedSelectedTeachers = selectedTeachers.concat()
     for (teacherArrayNum in checkedSelectedTeachers)
     {
         for (teacherNum in checkedSelectedTeachers[teacherArrayNum])
@@ -1271,7 +1271,7 @@ function saveSession(id)
         }
     }
 
-    var dataToSave = {"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(selectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks), "filtersJSON":JSON.stringify(filters), "favoriteSchedulesJSON":JSON.stringify(favoriteSchedules)}
+    var dataToSave = {"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(checkedSelectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks), "filtersJSON":JSON.stringify(filters), "favoriteSchedulesJSON":JSON.stringify(favoriteSchedules)}
     console.log(dataToSave)
 
     $.post(sessionSource, dataToSave, function(data) {
