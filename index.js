@@ -1262,6 +1262,15 @@ function saveSession(id)
 {
     console.log("Saving Data...")
 
+    var checkedSelectedTeachers = selectedTeachers
+    for (teacherArrayNum in checkedSelectedTeachers)
+    {
+        for (teacherNum in checkedSelectedTeachers[teacherArrayNum])
+        {
+            checkedSelectedTeachers[teacherArrayNum][teacherNum] = checkedSelectedTeachers[teacherArrayNum][teacherNum].replace(new RegExp("\"", 'g'), "\\\"")
+        }
+    }
+
     var dataToSave = {"command":"save", "id":id, "coursesJSON":JSON.stringify(selectedCourseCodes), "teachersJSON":JSON.stringify(selectedTeachers), "offBlocksJSON":JSON.stringify(selectedOffBlocks), "filtersJSON":JSON.stringify(filters), "favoriteSchedulesJSON":JSON.stringify(favoriteSchedules)}
     console.log(dataToSave)
 
