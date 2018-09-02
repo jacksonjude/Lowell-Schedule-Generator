@@ -1,7 +1,8 @@
 //const dataSource = "http://73.222.6.8/lowellscheduledatabase/query/"
 //const sessionSource = "http://73.222.6.8/lowellscheduledatabase/session/"
 
-const rootHost = window.location.href.split("://")[0] + "://" + window.location.hostname
+const rootHostOptions = ["https://jjcooley.ddns.net", "https://schedulegen.port0.org"]
+var rootHost = rootHostOptions[0]
 const dataSource = rootHost + "/lowellscheduledatabase/query/"
 const sessionSource = rootHost + "/lowellscheduledatabase/session/"
 
@@ -30,8 +31,37 @@ $.ajaxSetup({
 })
 
 $(function() {
-    loadCourseSelection()
+    pingtest(function() {
+        loadCourseSelection()
+    })
 })
+
+async function pingtest(completion)
+{
+    await pingRootHost()
+    await pingRootHost()
+    completion()
+}
+
+function pingRootHost()
+{
+    var pingRootHostPromise = new Promise(function(resolve, reject) {
+        $.get(rootHost + "/lowellscheduledatabase/ping/", function(data) {
+            if (data != "618")
+            {
+                rootHost = (rootHostOptions.indexOf(rootHost)+1 < rootHostOptions.length) ? rootHostOptions[rootHostOptions.indexOf(rootHost) + 1] : window.location.href.split("://")[0] + "://" + window.location.hostname
+            }
+
+            resolve()
+        }).fail(function() {
+            rootHost = (rootHostOptions.indexOf(rootHost)+1 < rootHostOptions.length) ? rootHostOptions[rootHostOptions.indexOf(rootHost) + 1] : window.location.href.split("://")[0] + "://" + window.location.hostname
+
+            resolve()
+        })
+    })
+
+    return pingRootHostPromise
+}
 
 //MARK: - Course Selection
 
