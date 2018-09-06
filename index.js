@@ -375,7 +375,7 @@ function getCourses(courseCodeArray, completion)
         {
             whereSQL += " or "
         }
-        whereSQL += "courseCode=\"" + courseCodeArray[courseCodeNum] + "\""
+        whereSQL += "courseCode=\'" + courseCodeArray[courseCodeNum] + "\'"
     }
 
     $.getJSON(dataSource, {"table":"courses", "where":whereSQL, "order":"departmentNumber,courseName asc"}, function(data) {
@@ -740,14 +740,14 @@ function sortBlockArray(selectedCourseCode)
 
 function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, completion)
 {
-    var whereSQL = "courseCode=\"" + courseCode + "\" and ("
+    var whereSQL = "courseCode=\'" + courseCode + "\' and ("
     for (teacher in selectedTeachers[selectedCourseCodes.indexOf(courseCode)])
     {
         if (teacher != 0)
         {
             whereSQL += " or "
         }
-        whereSQL += "teacher=\"" + selectedTeachers[selectedCourseCodes.indexOf(courseCode)][teacher].replace(new RegExp("\"", 'g'), "\\\"") + "\""
+        whereSQL += "teacher=\'" + selectedTeachers[selectedCourseCodes.indexOf(courseCode)][teacher].replace(new RegExp("\"", 'g'), "\\\"") + "\'"
     }
     whereSQL += ")"
 
@@ -959,7 +959,7 @@ function getCourseName(courseCode, completion)
                 {
                     whereSQL += " or "
                 }
-                whereSQL += "courseCode=\"" + selectedCourseCodes[selectedCourseCodeNum] + "\""
+                whereSQL += "courseCode=\'" + selectedCourseCodes[selectedCourseCodeNum] + "\'"
             }
 
             $.getJSON(dataSource, {"table":"courses", "column":"courseName,courseCode", "where":whereSQL}, function(courseData) {
