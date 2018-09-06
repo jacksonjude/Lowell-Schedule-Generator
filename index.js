@@ -1305,7 +1305,7 @@ function saveSession(id)
     {
         for (teacherNum in checkedSelectedTeachers[teacherArrayNum])
         {
-            checkedSelectedTeachers[teacherArrayNum][teacherNum] = checkedSelectedTeachers[teacherArrayNum][teacherNum].replace(new RegExp("\"", 'g'), "\\\"")
+            checkedSelectedTeachers[teacherArrayNum][teacherNum] = checkedSelectedTeachers[teacherArrayNum][teacherNum].replace(new RegExp("\"", 'g'), "\"")
         }
     }
 
@@ -1330,10 +1330,10 @@ function loadSessionJSON(json)
 {
     if (json != null && json.length >= 1)
     {
-        selectedCourseCodes = JSON.parse(json[0]["coursesJSON"] ? json[0]["coursesJSON"] : "[]")
-        selectedTeachers = JSON.parse(json[0]["teachersJSON"] ? json[0]["teachersJSON"] : "[]")
-        selectedOffBlocks = JSON.parse(json[0]["offBlocksJSON"] ? json[0]["offBlocksJSON"] : "[]")
-        filters = JSON.parse(json[0]["filtersJSON"] ? json[0]["filtersJSON"] : "[]")
-        favoriteSchedules = JSON.parse(json[0]["favoriteSchedulesJSON"] ? json[0]["favoriteSchedulesJSON"] : "[]")
+        selectedCourseCodes = JSON.parse(json[0]["coursesJSON".toLowerCase()] ? json[0]["coursesJSON".toLowerCase()] : "[]")
+        selectedTeachers = JSON.parse(json[0]["teachersJSON".toLowerCase()] ? json[0]["teachersJSON".toLowerCase()] : "[]")
+        selectedOffBlocks = JSON.parse(json[0]["offBlocksJSON".toLowerCase()] ? json[0]["offBlocksJSON".toLowerCase()] : "[]")
+        filters = JSON.parse(json[0]["filtersJSON"] ? json[0]["filtersJSON".toLowerCase()] : "[]")
+        favoriteSchedules = JSON.parse(json[0]["favoriteSchedulesJSON".toLowerCase()] ? json[0]["favoriteSchedulesJSON".toLowerCase()] : "[]")
     }
 }
