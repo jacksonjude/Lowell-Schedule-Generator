@@ -722,12 +722,12 @@ function loadSchedules(completion)
 function sortBlockArray(selectedCourseCode)
 {
     var sortBlockArrayPromise = new Promise(function(resolveBlockArray, rejectBlockArray) {
-        getBlockDataFromCourseCodeAndSelectedTeachers(selectedCourseCode, "blockNumber,count(blockNumber),group_concat(teacher separator '--')", function(data) {
+        getBlockDataFromCourseCodeAndSelectedTeachers(selectedCourseCode, "blockNumber,count(blockNumber),string_agg(teacher, '--')", function(data) {
             for (countNum in data)
             {
-                if (parseInt(data[countNum]["count(blockNumber)"]) > 0)
+                if (parseInt(data[countNum]["count"]) > 0)
                 {
-                    blockArrays[parseInt(data[countNum]["blockNumber"])-1][selectedCourseCode] = data[countNum]["group_concat(teacher separator '--')"].split("--")
+                    blockArrays[parseInt(data[countNum]["blockNumber"])-1][selectedCourseCode] = data[countNum]["string_agg"].split("--")
                 }
             }
 
