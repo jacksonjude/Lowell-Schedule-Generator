@@ -276,7 +276,7 @@ function addToMyCourses(courseCode)
 {
     //Get the course name and the department number
     $.getJSON(dataSource, {"table":"courses", "column":"courseName,departmentNumber", "key":"courseCode", "value":courseCode}, function(courseData) {
-        $(".myCourses").append("<div id=" + courseCode + ">" + departments[parseInt(courseData[0]["departmentNumber"])-1].departmentTitle + " - " + courseData[0]["courseName"] + "</div>")
+        $(".myCourses").append("<div id=" + courseCode + ">" + departments[parseInt(courseData[0]["departmentNumber".toLowerCase()])-1].departmentTitle + " - " + courseData[0]["courseName".toLowerCase()] + "</div>")
     })
 }
 
@@ -727,7 +727,7 @@ function sortBlockArray(selectedCourseCode)
             {
                 if (parseInt(data[countNum]["count"]) > 0)
                 {
-                    blockArrays[parseInt(data[countNum]["blockNumber"])-1][selectedCourseCode] = data[countNum]["string_agg"].split("--")
+                    blockArrays[parseInt(data[countNum]["blockNumber".toLowerCase()])-1][selectedCourseCode] = data[countNum]["string_agg"].split("--")
                 }
             }
 
@@ -965,7 +965,7 @@ function getCourseName(courseCode, completion)
             $.getJSON(dataSource, {"table":"courses", "column":"courseName,courseCode", "where":whereSQL}, function(courseData) {
                 for (courseNum in courseData)
                 {
-                    courseNames[courseData[courseNum]["courseCode"]] = courseData[courseNum]["courseName"]
+                    courseNames[courseData[courseNum]["courseCode".toLowerCase()]] = courseData[courseNum]["courseName".toLowerCase()]
                 }
 
                 completion(courseNames[courseCode])
