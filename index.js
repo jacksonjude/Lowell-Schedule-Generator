@@ -908,7 +908,7 @@ async function displaySchedules(showMorePressed, completion)
 
         let imageURL = "assets/"
 
-        let favoriteScheduleID = SHA256(thisScheduleInnerHTML)
+        let favoriteScheduleID = SHA256(JSON.stringify(schedules[scheduleNum]))
         imageURL += (Object.keys(favoriteSchedules).includes(favoriteScheduleID)) ? "favoriteIconPressed.png" : "favoriteIcon.png"
 
         scheduleHTML += "<input id='" + favoriteScheduleID + "' onclick='toggleFavoriteSchedule(this)' type='image' src='" + imageURL + "' class='favoriteButton' />"
