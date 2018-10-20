@@ -8,7 +8,7 @@
 
 const rootHostOptions = ["https://scheduledata.herokuapp.com", "https://scheduledata2.herokuapp.com"]
 
-const rootHost = "https://scheduledata.herokuapp.com"
+var rootHost = "https://scheduledata.herokuapp.com"
 const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
 
