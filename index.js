@@ -39,6 +39,8 @@ $.ajaxSetup({
 $(function() {
     pingtest(function() {
         loadCourseSelection()
+        dataSource = rootHost + "/query/"
+        sessionSource = rootHost + "/session/"
     })
 })
 
@@ -46,8 +48,6 @@ async function pingtest(completion)
 {
     await pingRootHost()
     await pingRootHost()
-    dataSource = rootHost + "/query/"
-    sessionSource = rootHost + "/session/"
     completion()
 }
 
