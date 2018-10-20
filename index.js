@@ -9,8 +9,8 @@
 const rootHostOptions = ["https://scheduledata.herokuapp.com", "https://scheduledata2.herokuapp.com"]
 
 var rootHost = "https://scheduledata.herokuapp.com"
-const dataSource = rootHost + "/query/"
-const sessionSource = rootHost + "/session/"
+var dataSource
+var sessionSource
 
 const maxClasses = 7
 const minClasses = 5
@@ -46,6 +46,8 @@ async function pingtest(completion)
 {
     await pingRootHost()
     await pingRootHost()
+    dataSource = rootHost + "/query/"
+    sessionSource = rootHost + "/session/"
     completion()
 }
 
