@@ -539,7 +539,7 @@ function loadOffBlockSelection()
         }
     }
 
-    while (!updateSelectedOffBlocks && selectedOffBlocks.length <= maxClasses+1-selectedCourseCodes.length)
+    while (!updateSelectedOffBlocks && selectedOffBlocks.length != maxClasses+1-selectedCourseCodes.length)
     {
         selectedOffBlocks.push([])
     }
