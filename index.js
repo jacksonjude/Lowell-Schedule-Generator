@@ -1,16 +1,8 @@
-//const dataSource = "http://73.222.6.8/lowellscheduledatabase/query/"
-//const sessionSource = "http://73.222.6.8/lowellscheduledatabase/session/"
+//const rootHostOptions = ["https://scheduledata.herokuapp.com", "https://scheduledata2.herokuapp.com"]
 
-//const rootHostOptions = ["https://jjcooley.ddns.net", "https://schedulegen.port0.org"]
-//var rootHost = rootHostOptions[0]
-//const dataSource = rootHost + "/lowellscheduledatabase/query/"
-//const sessionSource = rootHost + "/lowellscheduledatabase/session/"
-
-const rootHostOptions = ["https://scheduledata.herokuapp.com", "https://scheduledata2.herokuapp.com"]
-
-var rootHost = "https://scheduledata.herokuapp.com"
-var dataSource
-var sessionSource
+const rootHost = "https://scheduledata2.herokuapp.com"
+const dataSource = rootHost + "/query/"
+const sessionSource = rootHost + "/session/"
 
 const maxClasses = 7
 const minClasses = 5
@@ -36,7 +28,7 @@ $.ajaxSetup({
   cache: false
 })
 
-$(function() {
+/*$(function() {
     pingtest(function() {
         loadCourseSelection()
         dataSource = rootHost + "/query/"
@@ -69,11 +61,11 @@ function pingRootHost()
     })
 
     return pingRootHostPromise
-}
+}*/
 
-/*$(function() {
+$(function() {
     loadCourseSelection()
-})*/
+})
 
 //MARK: - Course Selection
 
