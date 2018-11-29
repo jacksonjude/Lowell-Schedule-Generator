@@ -66,6 +66,15 @@ function pingRootHost()
     }
 })(jQuery)*/
 
+function getJSON(dataSource, arguments, callback)
+{
+  $("#loader").show()
+  $.getJSON(dataSource, arguments, function(data) {
+    $("#loader").hide()
+    callback(data)
+  })
+}
+
 $.ajaxSetup({
   //Disable caching of AJAX responses
   cache: false
@@ -132,7 +141,7 @@ function setupCourseSelectionElements()
 function getDepartmentObjects(completion)
 {
     //Get departments from source
-    $.getJSON(dataSource, {"table":"departments"}, function(data) {
+    getJSON(dataSource, {"table":"departments"}, function(data) {
         var departmentsTmp = []
         for (departmentIndex in data)
         {
@@ -188,7 +197,7 @@ function selectDepartment(departmentElement)
 function getCoursesFromDepartment(departmentNumber, completion)
 {
   //Get courses from a departmentNumber
-    $.getJSON(dataSource, {"table":"courses", "column":"courseName,courseCode", "key":"departmentNumber", "value":departmentNumber}, function(data) {
+    getJSON(dataSource, {"table":"courses", "column":"courseName,courseCode", "key":"departmentNumber", "value":departmentNumber}, function(data) {
         var courses = []
         for (courseIndex in data)
         {
@@ -279,7 +288,7 @@ function checkedCourse(checkbox)
 function addToMyCourses(courseCode)
 {
     //Get the course name and the department number
-    $.getJSON(dataSource, {"table":"courses", "column":"courseName,departmentNumber", "key":"courseCode", "value":courseCode}, function(courseData) {
+    getJSON(dataSource, {"table":"courses", "column":"courseName,departmentNumber", "key":"courseCode", "value":courseCode}, function(courseData) {
         $(".myCourses").append("<div id=" + courseCode + ">" + departments[parseInt(courseData[0]["departmentNumber".toLowerCase()])-1].departmentTitle + " - " + courseData[0]["courseName".toLowerCase()] + "</div>")
     })
 }
@@ -382,7 +391,7 @@ function getCourses(courseCodeArray, completion)
         whereSQL += "courseCode=\'" + courseCodeArray[courseCodeNum] + "\'"
     }
 
-    $.getJSON(dataSource, {"table":"courses", "where":whereSQL, "order":"departmentNumber,courseName asc"}, function(data) {
+    getJSON(dataSource, {"table":"courses", "where":whereSQL, "order":"departmentNumber,courseName asc"}, function(data) {
         var courses = []
 
         for (courseNum in data)
@@ -400,7 +409,7 @@ function getCourses(courseCodeArray, completion)
 function getTeachersForCourse(courseCode, completion)
 {
     //Fetch teachers from courseCode
-    $.getJSON(dataSource, {"table":"blocks", "column":"teacher", "key":"courseCode", "value":courseCode, "distinct":"618", "order":"teacher asc"}, function(data) {
+    getJSON(dataSource, {"table":"blocks", "column":"teacher", "key":"courseCode", "value":courseCode, "distinct":"618", "order":"teacher asc"}, function(data) {
         var teachers = []
         for (teacherObjectNum in data)
         {
@@ -755,7 +764,7 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
     }
     whereSQL += ")"
 
-    $.getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":column, "where":whereSQL, "group":"blockNumber", "order":"blockNumber asc"}, function(data) {
+    getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":column, "where":whereSQL, "group":"blockNumber", "order":"blockNumber asc"}, function(data) {
         completion(data)
     })
 }
@@ -941,7 +950,7 @@ async function displaySchedules(showMorePressed, completion)
 function getScheduleBlockTeachers(whereSQL, completion)
 {
     var jsonPromise = new Promise((resolveJSON, rejectJSON) => {
-        $.getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":"teacher", "where":whereSQL}, function(data) {
+        getJSON(dataSource, {"table":"blocks", "distinct":"618", "column":"teacher", "where":whereSQL}, function(data) {
             completion(data)
 
             resolveJSON()
@@ -966,7 +975,7 @@ function getCourseName(courseCode, completion)
                 whereSQL += "courseCode=\'" + selectedCourseCodes[selectedCourseCodeNum] + "\'"
             }
 
-            $.getJSON(dataSource, {"table":"courses", "column":"courseName,courseCode", "where":whereSQL}, function(courseData) {
+            getJSON(dataSource, {"table":"courses", "column":"courseName,courseCode", "where":whereSQL}, function(courseData) {
                 for (courseNum in courseData)
                 {
                     courseNames[courseData[courseNum]["courseCode".toLowerCase()]] = courseData[courseNum]["courseName".toLowerCase()]
