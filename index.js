@@ -533,8 +533,8 @@ function selectAllTeachers()
 {
     for (checkbox in checkboxes)
     {
-      selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(checkbox).attr("id"))
-      addToMyTeachers($(checkbox).attr("id"))
+      selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(checkboxes[checkbox]).attr("id"))
+      addToMyTeachers($(checkboxes[checkbox]).attr("id"))
     }
 }
 
