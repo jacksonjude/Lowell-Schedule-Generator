@@ -23,11 +23,6 @@ var checkboxes = []
 
 var courseNames = {}
 
-$.ajaxSetup({
-  //Disable caching of AJAX responses
-  cache: false
-})
-
 /*$(function() {
     pingtest(function() {
         loadCourseSelection()
@@ -70,6 +65,11 @@ function pingRootHost()
         return originalVal.call(this).always(function () { $("#loader").hide() })
     }
 })(jQuery)
+
+$.ajaxSetup({
+  //Disable caching of AJAX responses
+  cache: false
+})
 
 $(function() {
     loadCourseSelection()
