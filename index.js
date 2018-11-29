@@ -63,6 +63,14 @@ function pingRootHost()
     return pingRootHostPromise
 }*/
 
+(function ($) {
+    var originalVal = $.getJSON;
+    $.getJSON = function(value) {
+        $("#loader").show()
+        return originalVal.call(this).always(function () { $("#loader").hide() })
+    }
+})(jQuery)
+
 $(function() {
     loadCourseSelection()
 })
