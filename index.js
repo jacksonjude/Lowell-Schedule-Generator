@@ -421,6 +421,7 @@ function getTeachersForCourse(courseCode, completion)
 
 function selectCourse(courseElement)
 {
+    checkboxes = []
     //Set background colors
     if (selectedCourse != "0")
     {
