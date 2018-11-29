@@ -12,6 +12,7 @@ var departments = []
 var selectedDepartment = "0"
 var selectedCourseCodes = []
 
+var teachersToChoose = []
 var selectedCourse = "0"
 var selectedTeachers = []
 
@@ -433,6 +434,8 @@ function selectCourse(courseElement)
 
     getTeachersForCourse(selectedCourse, function(teacherArray)
     {
+        teachersToChoose = teacherArray.concat()
+
         var teacherSelection = $(".teacherSelection")
 
         teacherSelection.empty()
@@ -537,11 +540,11 @@ function selectAllTeachers()
     }
 
     selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)] = []
-    for (checkbox in checkboxes)
+    for (teacherNum in teachersToChoose)
     {
-        selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(checkboxes[checkbox]).attr("id"))
-        addToMyTeachers($(checkboxes[checkbox]).attr("id"))
-        checkboxes[checkbox].prop("checked", true)
+        selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(teachersToChoose[teacherNum]).attr("id"))
+        addToMyTeachers($(teachersToChoose[teacherNum]).attr("id"))
+        $("#" + teachersToChoose[teacherNum]).prop("checked", true)
     }
 }
 
