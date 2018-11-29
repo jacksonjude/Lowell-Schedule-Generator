@@ -531,12 +531,17 @@ function removeFromMyTeachers(teacher)
 
 function selectAllTeachers()
 {
+    for (teacherNum in selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)])
+    {
+        removeFromMyTeachers(selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)][teacherNum])
+    }
+
     selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)] = []
     for (checkbox in checkboxes)
     {
-      selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(checkboxes[checkbox]).attr("id"))
-      addToMyTeachers($(checkboxes[checkbox]).attr("id"))
-      checkboxes[checkbox].prop("checked", true)
+        selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(checkboxes[checkbox]).attr("id"))
+        addToMyTeachers($(checkboxes[checkbox]).attr("id"))
+        checkboxes[checkbox].prop("checked", true)
     }
 }
 

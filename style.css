@@ -44,9 +44,14 @@
     border-radius: 5px;
 }
 
-.classSelection, .teacherSelection, .offBlockSelection, .filterSelection
+.classSelection, .offBlockSelection, .filterSelection
 {
     min-width: 400;
+}
+
+.teacherSelection
+{
+    min-width: 300;
 }
 
 .filterSelectionContainer
