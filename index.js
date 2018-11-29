@@ -372,7 +372,7 @@ function setupTeacherSelectionElements()
     selection.empty()
 
     selection.append("<div class='courseScrollerContainer'></div>")
-    selection.append("<div class='teacherSelectionContainer'><div class='teacherSelection'></div></div>")
+    selection.append("<div class='teacherSelectionContainer'><div class='teacherSelection'></div><button id='selectButton' onclick='selectAllTeachers()' style='position:absolute; top:20; right:20; vertical-align: top'>Select All</button></div>")
     selection.append("<div class='myTeachersContainer'><div class='myTeachers'><h3><div id='myTeachersTitle'>My Teachers</div></h3><br></div></div>")
 
     $("#instructions").html("Choose any teachers you want to have and then click \"Next\"")
@@ -527,6 +527,15 @@ function addToMyTeachers(teacher, localCourse)
 function removeFromMyTeachers(teacher)
 {
     $(".myTeachers").find("#" + selectedCourse + SHA256(teacher)).remove()
+}
+
+function selectAllTeachers()
+{
+    for (checkbox in checkboxes)
+    {
+      selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(checkbox).attr("id"))
+      addToMyTeachers($(checkbox).attr("id"))
+    }
 }
 
 //MARK: - Off Block Selection
