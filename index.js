@@ -540,9 +540,10 @@ function selectAllTeachers()
     selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)] = []
     for (checkbox in checkboxes)
     {
-        selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(checkboxes[checkbox]).attr("id"))
-        addToMyTeachers($(checkboxes[checkbox]).attr("id"))
+        //selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].push($(checkboxes[checkbox]).attr("id"))
+        //addToMyTeachers($(checkboxes[checkbox]).attr("id"))
         checkboxes[checkbox].prop("checked", true)
+        checkedTeacher(checkboxes[checkbox][0])
     }
 }
 
