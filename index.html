@@ -8,7 +8,7 @@
         <script src="model.js"></script>
         <script src="sha256.js"></script>
         <script src="index.js"></script>
-        <style>
+        <!--<style>
         .loader {
             border: 5px solid #f3f3f3; /* Light grey */
             border-top: 5px solid #3498db; /* Blue */
@@ -23,7 +23,7 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        </style>
+      </style>-->
     </head>
     <body>
         <h1 class="outline" style="font-weight: bold; font-size: 64;">Lowell Schedule Generator</h1>
@@ -31,6 +31,6 @@
         <div class="loader" id="loader"></div>
         <span style="position: absolute; top: 20; right: 20; vertical-align: top; color: white;"><input id="sessionID" placeholder="Session ID" autocomplete="off"><br><button onclick="saveSession($('#sessionID').val())">Save</button><button onclick="loadSession($('#sessionID').val(), function() {loadCourseSelection()})">Load</button><button onclick="loadSession($('#sessionID').val(), function() {reloadThenShowFavorites()})">Fav</button></span>
         <br>
-        <div id="selection"></div>
+        <!--<div id="selection"></div>-->
     </body>
 </html>

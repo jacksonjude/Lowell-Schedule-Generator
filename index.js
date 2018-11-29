@@ -58,13 +58,13 @@ function pingRootHost()
     return pingRootHostPromise
 }*/
 
-(function ($) {
+/*(function ($) {
     var originalVal = $.getJSON;
     $.getJSON = function(value) {
         $("#loader").show()
         return originalVal.call(this).always(function () { $("#loader").hide() })
     }
-})(jQuery)
+})(jQuery)*/
 
 $.ajaxSetup({
   //Disable caching of AJAX responses
