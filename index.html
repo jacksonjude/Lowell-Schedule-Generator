@@ -32,7 +32,7 @@
         <h1 class="outline" style="font-weight: bold; font-size: 64;">Lowell Schedule Generator</h1>
         <div style="padding-left: 20px; position: relative; display: inline-block;"><h2 id="instructions" style="padding-left: 10px; padding-top: 5px; padding-bottom: 5px; padding-right: 10px; border:1px solid white; background-color: #444444; color: white; border-radius: 5px;"></h2></div>
         <div class="loader" id="loader"></div>
-        <span style="position: absolute; top: 20; right: 20; vertical-align: top; color: white;"><input id="sessionID" placeholder="Session ID" autocomplete="off"><br><button onclick="saveSession($('#sessionID').val())">Save</button><button onclick="loadSession($('#sessionID').val(), function() {loadCourseSelection()})">Load</button><button onclick="loadSession($('#sessionID').val(), function() {reloadThenShowFavorites()})">Fav</button></span>
+        <span style="position: absolute; top: 20; right: 20; vertical-align: top; color: white;"><input id="sessionID" placeholder="Session ID" autocomplete="off"><br><button id="saveButton" onclick="saveSession($('#sessionID').val())">Save</button><button id="loadButton" onclick="loadSession($('#sessionID').val(), function() {loadCourseSelection()})">Load</button><button id="favoriteButton" onclick="loadSession($('#sessionID').val(), function() {reloadThenShowFavorites()})">Fav</button></span>
         <br>
         <div id="selection"></div>
     </body>

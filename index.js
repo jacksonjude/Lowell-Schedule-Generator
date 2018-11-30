@@ -68,19 +68,20 @@ function pingRootHost()
 
 function getJSON(dataSource, arguments, callback)
 {
-  $("#loader").show()
-  $.getJSON(dataSource, arguments, function(data) {
-    $("#loader").hide()
-    callback(data)
-  })
+    $("#loader").show()
+    $.getJSON(dataSource, arguments, function(data) {
+        $("#loader").hide()
+        callback(data)
+    })
 }
 
 $.ajaxSetup({
-  //Disable caching of AJAX responses
-  cache: false
+    //Disable caching of AJAX responses
+    cache: false
 })
 
 $(function() {
+    //ADD- SPACING FOR SESSION BUTTONS
     loadCourseSelection()
 })
 
@@ -1358,7 +1359,7 @@ function loadSessionJSON(json)
         selectedCourseCodes = JSON.parse(json[0]["coursesJSON".toLowerCase()] ? json[0]["coursesJSON".toLowerCase()] : "[]")
         selectedTeachers = JSON.parse(json[0]["teachersJSON".toLowerCase()] ? json[0]["teachersJSON".toLowerCase()] : "[]")
         selectedOffBlocks = JSON.parse(json[0]["offBlocksJSON".toLowerCase()] ? json[0]["offBlocksJSON".toLowerCase()] : "[]")
-        filters = JSON.parse(json[0]["filtersJSON"] ? json[0]["filtersJSON".toLowerCase()] : "[]")
+        filters = JSON.parse(json[0]["filtersJSON".toLowerCase()] ? json[0]["filtersJSON".toLowerCase()] : "[]")
         favoriteSchedules = JSON.parse(json[0]["favoriteSchedulesJSON".toLowerCase()] ? json[0]["favoriteSchedulesJSON".toLowerCase()] : "[]")
     }
 }
