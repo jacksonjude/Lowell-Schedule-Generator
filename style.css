@@ -3,107 +3,97 @@
   left: 0;
   top: 0;
   z-index: -1;
-
   display: block;
-
   background: url(assets/background.jpg);
   background-size: cover;
-
   -webkit-filter: blur(10px);
   -moz-filter: blur(10px);
   -o-filter: blur(10px);
   -ms-filter: blur(10px);
   filter: blur(10px);
-
   min-width: 100%;
   min-height: 100%;
 }
 
 .outline {
-    color: BLACK;
-    -webkit-text-fill-color: WHITE;
-    -webkit-text-stroke-width: 1px;
-    -webkit-text-stroke-color: black;
+  color: BLACK;
+  -webkit-text-fill-color: WHITE;
+  -webkit-text-stroke-width: 1px;
+  -webkit-text-stroke-color: black;
 }
 
-.departmentScrollerContainer, .classSelectionContainer, .myCoursesContainer, .teacherSelectionContainer, .courseScrollerContainer, .myTeachersContainer, .offBlockScrollerContainer, .offBlockSelectionContainer, .myOffBlocksContainer, .scheduleContainer, .filterSelectionContainer
-{
-    position: relative;
-    display: inline-block;
-    padding-left: 20px;
-    vertical-align: top;
+.departmentScrollerContainer, .classSelectionContainer, .myCoursesContainer, .teacherSelectionContainer, .courseScrollerContainer, .myTeachersContainer, .offBlockScrollerContainer, .offBlockSelectionContainer, .myOffBlocksContainer, .scheduleContainer, .filterSelectionContainer {
+  position: relative;
+  display: inline-block;
+  padding-left: 20px;
+  vertical-align: top;
 }
 
-.departmentScroller, .classSelection, .myCourses, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection, .schedule, .filterSelection
-{
-    color: WHITE;
-    border:1px solid white;
-    background-color: #444444;
-    padding-left:10px;
-    padding-right:10px;
-    border-radius: 5px;
+.departmentScroller, .classSelection, .myCourses, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection, .schedule, .filterSelection, .departmentAnimationBox {
+  color: WHITE;
+  border: 1px solid white;
+  background-color: #444444;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-radius: 5px;
 }
 
-.classSelection, .offBlockSelection, .filterSelection
-{
-    min-width: 400;
+.classSelection, .offBlockSelection, .filterSelection {
+  min-width: 400;
 }
 
-.teacherSelection
-{
-    min-width: 300;
+.teacherSelection {
+  min-width: 300;
 }
 
-.filterSelectionContainer
-{
-    position: absolute;
-    right: 20px;
+.filterSelectionContainer {
+  position: absolute;
+  right: 20px;
 }
 
-.myCourses, .myTeachers
-{
-    min-height: 220;
-    min-width: 250;
+.myCourses, .myTeachers {
+  min-height: 220;
+  min-width: 250;
 }
 
-.myTeachersContainer
-{
-    width: 100%;
-    max-width: 380;
+.myTeachersContainer {
+  width: 100%;
+  max-width: 380;
 }
 
-.myOffBlocks
-{
-    min-width: 190;
+.myOffBlocks {
+  min-width: 190;
 }
 
-.scheduleContainer
-{
-    min-width: 380px
+.scheduleContainer {
+  min-width: 380px
 }
 
-.schedule
-{
-    padding-top: 10px;
-    padding-bottom: 10px;
+.schedule {
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
-#nextButton
-{
-    position:absolute;
-    top:20;
-    right:20;
-    vertical-align: top;
+#nextButton {
+  position: absolute;
+  top: 20;
+  right: 20;
+  vertical-align: top;
 }
 
-.favoriteButton
-{
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    border: none;
-    outline: none;
-    max-width: 30px;
-    max-height: 30px;
-    background: url('assets/favoriteIcon.png');
+.favoriteButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+  outline: none;
+  max-width: 30px;
+  max-height: 30px;
+  background: url('assets/favoriteIcon.png');
+}
+
+.departmentAnimationBox {
+  position: absolute;
+  top: 0;
+  background-color: #992222;
 }
