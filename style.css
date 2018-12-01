@@ -29,7 +29,7 @@
   vertical-align: top;
 }
 
-.departmentScroller, .classSelection, .myCourses, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection, .schedule, .filterSelection, .departmentAnimationBox {
+.departmentScroller, .classSelection, .myCourses, .teacherSelection, .courseScroller, .myTeachers, .offBlockScroller, .myOffBlocks, .offBlockSelection, .schedule, .filterSelection, .selectedAnimationBox {
   color: WHITE;
   border: 1px solid white;
   background-color: #444444;
@@ -44,6 +44,10 @@
 
 .teacherSelection {
   min-width: 300;
+}
+
+.offBlockSelection {
+  min-width: 200;
 }
 
 .filterSelectionContainer {
@@ -92,7 +96,7 @@
   background: url('assets/favoriteIcon.png');
 }
 
-.departmentAnimationBox {
+.selectedAnimationBox {
   position: absolute;
   top: 0;
   background-color: #992222;

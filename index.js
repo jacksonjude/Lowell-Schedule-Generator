@@ -1,5 +1,3 @@
-//const rootHostOptions = ["https://scheduledata.herokuapp.com", "https://scheduledata2.herokuapp.com"]
-
 const rootHost = "https://scheduledata2.herokuapp.com"
 const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
@@ -22,49 +20,6 @@ var checkboxesDisabled = false
 var checkboxes = []
 
 var courseNames = {}
-
-/*$(function() {
-    pingtest(function() {
-        loadCourseSelection()
-        dataSource = rootHost + "/query/"
-        sessionSource = rootHost + "/session/"
-    })
-})
-
-async function pingtest(completion)
-{
-    await pingRootHost()
-    await pingRootHost()
-    completion()
-}
-
-function pingRootHost()
-{
-    var pingRootHostPromise = new Promise(function(resolve, reject) {
-        $.get(rootHost + "/ping/", function(data) {
-            if (data != "618")
-            {
-                rootHost = (rootHostOptions.indexOf(rootHost)+1 < rootHostOptions.length) ? rootHostOptions[rootHostOptions.indexOf(rootHost) + 1] : window.location.href.split("://")[0] + "://" + window.location.hostname
-            }
-
-            resolve()
-        }).fail(function() {
-            rootHost = (rootHostOptions.indexOf(rootHost)+1 < rootHostOptions.length) ? rootHostOptions[rootHostOptions.indexOf(rootHost) + 1] : window.location.href.split("://")[0] + "://" + window.location.hostname
-
-            resolve()
-        })
-    })
-
-    return pingRootHostPromise
-}*/
-
-/*(function ($) {
-    var originalVal = $.getJSON;
-    $.getJSON = function(value) {
-        $("#loader").show()
-        return originalVal.call(this).always(function () { $("#loader").hide() })
-    }
-})(jQuery)*/
 
 function getJSON(dataSource, arguments, callback)
 {
@@ -93,6 +48,8 @@ function loadCourseSelection()
 {
   showingFavorites = false
 
+  itemToMoveFrom = "0"
+
   //Reset checkboxes
   checkboxes = []
   checkboxesDisabled = false
@@ -114,7 +71,11 @@ function loadCourseSelection()
     }
 
     //Select first object
+    selectedDepartment = "1"
     selectDepartment($("#dep1"))
+    selectedItem = "1"
+    itemToMoveFrom = "1"
+    moveSelectionBox("#dep", 1, true)
   })
 
   //Add selected courses if any exist
@@ -141,7 +102,7 @@ function setupCourseSelectionElements()
 
   selection.empty()
 
-  selection.append("<div class='departmentScrollerContainer'><div class='departmentAnimationBox' id='depbox'></div></div>")
+  selection.append("<div class='departmentScrollerContainer'><div class='selectedAnimationBox' id='selectionbox'></div></div>")
   selection.append("<div class=classSelectionContainer><div class='classSelection'></div></div>")
   selection.append("<div class=myCoursesContainer><div class='myCourses'><h3><div id='myCoursesTitle'>My Courses</div></h3></div></div>")
 
@@ -173,21 +134,16 @@ function getDepartmentObjects(completion)
 
 function selectDepartment(departmentElement)
 {
-  if (selectedDepartment == $(departmentElement).attr("id").replace("dep", ""))
-  {
-    return
-  }
-  //Set background colors
-  departmentToMoveFrom = selectedDepartment
-
+  var itemToMoveFromTmp = selectedDepartment
   selectedDepartment = $(departmentElement).attr("id").replace("dep", "")
 
-  moveDepartmentSelectionBox()
-
-  // $(departmentElement).css(
-  // {
-  //   "background-color": "#992222"
-  // })
+  if (itemToMoveFromTmp != selectedDepartment)
+  {
+    itemToMoveFrom = itemToMoveFromTmp
+    selectedItem = selectedDepartment
+    var movementDirection = Math.sign(selectedItem - itemToMoveFrom)
+    moveSelectionBox("#dep", movementDirection)
+  }
 
   //Get course objects from department
   getCoursesFromDepartment(selectedDepartment, function(courses)
@@ -215,44 +171,41 @@ function selectDepartment(departmentElement)
   })
 }
 
-const timeToMoveDepartmentBox = 200
-const moveDepartmentBoxInterval = 5
-var departmentToMoveFrom = "0"
+const timeToMoveBox = 200
+const moveBoxInterval = 5
+var itemToMoveFrom = ""
+var selectedItem = ""
 
-function moveDepartmentSelectionBox()
+function moveSelectionBox(currentIDPrefix, movementDirection, overrideCheck)
 {
-  if (departmentToMoveFrom != selectedDepartment)
+  if (itemToMoveFrom != selectedItem || overrideCheck)
   {
-    if (departmentToMoveFrom == 0)
-    {
-      departmentToMoveFrom = 1
-    }
-    $("#depbox").css("width", $("#dep1").css("width"))
-    $("#depbox").css("height", $("#dep1").css("height"))
-    var percentToMove = moveDepartmentBoxInterval/timeToMoveDepartmentBox
-    var topPosition = $("#depbox").position().top
-    //console.log(departmentToMoveFrom + " -- " + selectedDepartment)
-    var positionToMoveTo = $("#dep" + selectedDepartment).offset().top
-    var positionToMoveFrom = $("#dep" + departmentToMoveFrom).offset().top
+    $("#selectionbox").css("width", $(currentIDPrefix + selectedItem).css("width"))
+    $("#selectionbox").css("height", $(currentIDPrefix + selectedItem).css("height"))
+    var percentToMove = moveBoxInterval/timeToMoveBox
+    var topPosition = $("#selectionbox").position().top
+    console.log(itemToMoveFrom + " -- " + selectedItem)
+    var positionToMoveTo = $(currentIDPrefix + selectedItem).offset().top
+    var positionToMoveFrom = $(currentIDPrefix + itemToMoveFrom).offset().top
 
     var moveAmount = (positionToMoveTo-positionToMoveFrom)*percentToMove
 
     //console.log(positionToMoveTo + " -- " + positionToMoveFrom)
 
-    var movementDirection = Math.sign(selectedDepartment - departmentToMoveFrom)
-
-    if ((movementDirection == 1 && $("#depbox").offset().top > positionToMoveTo) || movementDirection == -1 && $("#depbox").offset().top < positionToMoveTo)
+    if ((movementDirection == 1 && $("#selectionbox").offset().top > positionToMoveTo) || movementDirection == -1 && $("#selectionbox").offset().top < positionToMoveTo)
     {
-      $("#depbox").css("top", $("#dep" + selectedDepartment).position().top)
+      $("#selectionbox").css("top", $(currentIDPrefix + selectedItem).position().top)
       return
     }
 
-    $("#depbox").css("top", topPosition + moveAmount)
+    $("#selectionbox").css("top", topPosition + moveAmount)
     //console.log(positionToMoveTo)
     //console.log(positionToMoveFrom)
     //console.log((positionToMoveTo-positionToMoveFrom))
 
-    setTimeout(moveDepartmentSelectionBox, moveDepartmentBoxInterval)
+    setTimeout(function() {
+      moveSelectionBox(currentIDPrefix, movementDirection)
+    }, moveBoxInterval)
   }
 }
 
@@ -398,7 +351,7 @@ function loadTeacherSelection()
     for (courseNum in courses)
     {
       //Create a row for each object
-      var courseRow = $("<div class='courseScroller' id='course" + courses[courseNum].courseCode + "'><h3 style='color:WHITE;'>" + courses[courseNum].courseName + "</h3></div>")
+      var courseRow = $("<div class='courseScroller' id='course" + courses[courseNum].courseCode + "'><span style='z-index:2; position:relative;'><h3 style='color:WHITE;'>" + courses[courseNum].courseName + "</h3></span></div>")
       courseRow.attr("onclick", "selectCourse(this)")
       $(".courseScrollerContainer").append(courseRow)
 
@@ -413,7 +366,11 @@ function loadTeacherSelection()
     console.log(selectedCourseCodes)
 
     //Select first object
+    selectedCourse = selectedCourseCodes[0]
     selectCourse($("#course" + selectedCourseCodes[0]))
+    selectedItem = selectedCourseCodes[0]
+    itemToMoveFrom = selectedCourseCodes[0]
+    moveSelectionBox("#course", 1, true)
   })
 
   //Add any previous selectedTeachers to myTeachers
@@ -447,7 +404,7 @@ function setupTeacherSelectionElements()
 
   selection.empty()
 
-  selection.append("<div class='courseScrollerContainer'></div>")
+  selection.append("<div class='courseScrollerContainer'><div class='selectedAnimationBox' id='selectionbox'></div></div>")
   selection.append("<div class='teacherSelectionContainer'><div class='teacherSelection'></div><button id='selectButton' onclick='selectAllTeachers()' style='position:absolute; top:20; right:20; vertical-align: top'>Select All</button></div>")
   selection.append("<div class='myTeachersContainer'><div class='myTeachers'><h3><div id='myTeachersTitle'>My Teachers</div></h3><br></div></div>")
 
@@ -513,21 +470,17 @@ function getTeachersForCourse(courseCode, completion)
 function selectCourse(courseElement)
 {
   checkboxes = []
-  //Set background colors
-  if (selectedCourse != "0")
-  {
-    $("#course" + selectedCourse).css(
-    {
-      "background-color": "#444444"
-    })
-  }
 
+  var itemToMoveFromTmp = selectedCourse
   selectedCourse = $(courseElement).attr("id").replace("course", "")
 
-  $(courseElement).css(
+  if (itemToMoveFromTmp != selectedCourse)
   {
-    "background-color": "#992222"
-  })
+    selectedItem = selectedCourse
+    itemToMoveFrom = itemToMoveFromTmp
+    var movementDirection = Math.sign(selectedCourseCodes.indexOf(selectedItem) - selectedCourseCodes.indexOf(itemToMoveFrom))
+    moveSelectionBox("#course", movementDirection)
+  }
 
   getTeachersForCourse(selectedCourse, function(teacherArray)
   {
@@ -661,7 +614,7 @@ function loadOffBlockSelection()
 
   for (var i = 0; i < maxClasses + 1 - selectedCourseCodes.length; i++)
   {
-    var offBlockRow = $("<div class='offBlockScroller' id='offBlock" + (i + 1).toString() + "'><h3 style='color:WHITE;'>" + "Off Block #" + (i + 1).toString() + "</h3></div>")
+    var offBlockRow = $("<div class='offBlockScroller' id='offBlock" + (i + 1).toString() + "'><span style='z-index:2; position:relative;'><h3 style='color:WHITE;'>" + "Off Block #" + (i + 1).toString() + "</h3></span></div>")
     offBlockRow.attr("onclick", "selectOffBlock(this)")
     $(".offBlockScrollerContainer").append(offBlockRow)
 
@@ -678,7 +631,11 @@ function loadOffBlockSelection()
 
   reloadMyOffBlocks()
 
+  selectedOffBlockNumber = "1"
   selectOffBlock("#offBlock1")
+  selectedItem = "1"
+  itemToMoveFrom = "1"
+  moveSelectionBox("#offBlock", 1, true)
 
   $("#instructions").html("Choose any off blocks you would like to have and then click \"Next\"")
 }
@@ -689,27 +646,35 @@ function setupOffBlockSelectionElements()
 
   selection.empty()
 
-  selection.append("<div class='offBlockScrollerContainer'></div>")
+  selection.append("<div class='offBlockScrollerContainer'><div class='selectedAnimationBox' id='selectionbox'></div></div>")
   selection.append("<div class='offBlockSelectionContainer' style='position:relative'><div class='offBlockSelection'><br></div><button id='selectButton' onclick='selectAllOffBlocks()' style='position:absolute; top:20; right:20; vertical-align: top'>Select All</button></div>")
   selection.append("<div class='myOffBlocksContainer'><div class='myOffBlocks'><h3><div id='myOffBlocksTitle'>My Off Blocks</div></h3><br></div></div>")
 }
 
 function selectOffBlock(offBlockElement)
 {
-  if (selectedOffBlockNumber != "0")
+  /*if (selectedOffBlockNumber != "0")
   {
     $("#offBlock" + selectedOffBlockNumber).css(
     {
       "background-color": "#444444"
     })
-  }
+  }*/
 
+  var itemToMoveFromTmp = selectedOffBlockNumber
   selectedOffBlockNumber = $(offBlockElement).attr("id").replace("offBlock", "")
 
-  $(offBlockElement).css(
+  if (itemToMoveFromTmp != selectedOffBlockNumber)
+  {
+    selectedItem = selectedOffBlockNumber
+    itemToMoveFrom = itemToMoveFromTmp
+    var movementDirection = Math.sign(selectedOffBlockNumber - itemToMoveFrom)
+    moveSelectionBox("#offBlock", movementDirection)
+  }
+  /*$(offBlockElement).css(
   {
     "background-color": "#992222"
-  })
+  })*/
 
   var offBlockSelection = $(".offBlockSelection")
 
