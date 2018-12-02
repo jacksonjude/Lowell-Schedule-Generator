@@ -31,16 +31,38 @@ function getJSON(dataSource, arguments, callback)
   })
 }
 
-$.ajaxSetup(
-{
+$.ajaxSetup({
   //Disable caching of AJAX responses
   cache: false
 })
 
 $(function()
 {
-  loadCourseSelection()
+  setupSessionButtons()
+
+  var url = new URL(window.location.href);
+  var shareUUID = url.searchParams.get("shareUUID");
+  if (shareUUID != null)
+  {
+    loadSession(shareUUID, function() {reloadThenShowFavorites()}, true)
+  }
+  else
+  {
+    loadCourseSelection()
+  }
 })
+
+function setupSessionButtons()
+{
+  var widthOfBox = 150
+  $("#sessionID").css('width', widthOfBox)
+  $("#saveButton").css('width', widthOfBox / 3)
+  $("#loadButton").css('width', widthOfBox / 3)
+  $("#favoriteButton").css('width', widthOfBox / 3)
+  $("#shareButton").css('width', widthOfBox)
+  $("#sessionShare").css('width', widthOfBox)
+  $("#sessionShare").hide()
+}
 
 //MARK: - Course Selection
 
@@ -87,12 +109,6 @@ function loadCourseSelection()
   {
     $(".myCourses").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
   }
-
-  var widthOfBox = 150
-  $("#sessionID").css('width', widthOfBox)
-  $("#saveButton").css('width', widthOfBox / 3)
-  $("#loadButton").css('width', widthOfBox / 3)
-  $("#favoriteButton").css('width', widthOfBox / 3)
 }
 
 function setupCourseSelectionElements()
@@ -184,7 +200,7 @@ function moveSelectionBox(currentIDPrefix, movementDirection, overrideCheck)
     $("#selectionbox").css("height", $(currentIDPrefix + selectedItem).css("height"))
     var percentToMove = moveBoxInterval/timeToMoveBox
     var topPosition = $("#selectionbox").position().top
-    console.log(itemToMoveFrom + " -- " + selectedItem)
+    //console.log(itemToMoveFrom + " -- " + selectedItem)
     var positionToMoveTo = $(currentIDPrefix + selectedItem).offset().top
     var positionToMoveFrom = $(currentIDPrefix + itemToMoveFrom).offset().top
 
@@ -199,9 +215,6 @@ function moveSelectionBox(currentIDPrefix, movementDirection, overrideCheck)
     }
 
     $("#selectionbox").css("top", topPosition + moveAmount)
-    //console.log(positionToMoveTo)
-    //console.log(positionToMoveFrom)
-    //console.log((positionToMoveTo-positionToMoveFrom))
 
     setTimeout(function() {
       moveSelectionBox(currentIDPrefix, movementDirection)
@@ -653,14 +666,6 @@ function setupOffBlockSelectionElements()
 
 function selectOffBlock(offBlockElement)
 {
-  /*if (selectedOffBlockNumber != "0")
-  {
-    $("#offBlock" + selectedOffBlockNumber).css(
-    {
-      "background-color": "#444444"
-    })
-  }*/
-
   var itemToMoveFromTmp = selectedOffBlockNumber
   selectedOffBlockNumber = $(offBlockElement).attr("id").replace("offBlock", "")
 
@@ -671,10 +676,6 @@ function selectOffBlock(offBlockElement)
     var movementDirection = Math.sign(selectedOffBlockNumber - itemToMoveFrom)
     moveSelectionBox("#offBlock", movementDirection)
   }
-  /*$(offBlockElement).css(
-  {
-    "background-color": "#992222"
-  })*/
 
   var offBlockSelection = $(".offBlockSelection")
 
@@ -788,8 +789,7 @@ async function generateSchedules(completion)
 
   for (var i = 0; i < maxClasses + 1; i++)
   {
-    blockArrays.push(
-    {})
+    blockArrays.push({})
   }
 
   for (selectedCourseNum in selectedCourseCodes)
@@ -1158,8 +1158,7 @@ function setupFilterMenu()
 
   if (filters.concat().reverse()[0] == undefined || filters.concat().reverse()[0] == null || (Object.keys(filters.concat().reverse()[0]).length > 0 && !justRemovedFilter))
   {
-    filters.push(
-    {})
+    filters.push({})
   }
 
   if (justRemovedFilter)
@@ -1408,8 +1407,7 @@ function addFilter()
   $("#removeFilterButton").remove()
   $("#filterBreaks1").remove()
 
-  filters.push(
-  {})
+  filters.push({})
 
   addFilterSelectHTML(filters.length - 1)
 
@@ -1444,6 +1442,11 @@ function removeFilter()
 
 function saveSession(id)
 {
+  if (id == null || id == "")
+  {
+    return
+  }
+
   console.log("Saving Data...")
 
   var checkedSelectedTeachers = selectedTeachers.concat()
@@ -1472,18 +1475,37 @@ function saveSession(id)
   })
 }
 
-function loadSession(id, completion)
+function loadSession(id, completion, isShare)
 {
-  $.post(sessionSource,
+  if (id == null || id == "")
   {
-    "command": "load",
-    "id": id
-  }, function(data)
-  {
-    loadSessionJSON(data)
+    return
+  }
 
-    completion ? completion() : false
-  })
+  if (isShare == null || !isShare)
+  {
+    $.post(sessionSource,
+    {
+      "command": "load",
+      "id": id
+    }, function(data)
+    {
+      loadSessionJSON(data)
+      completion ? completion() : false
+    })
+  }
+  else
+  {
+    $.post(sessionSource,
+    {
+      "command": "loadShare",
+      "shareUUID": id
+    }, function(data)
+    {
+      loadSessionJSON(data)
+      completion ? completion() : false
+    })
+  }
 }
 
 function loadSessionJSON(json)
@@ -1496,4 +1518,45 @@ function loadSessionJSON(json)
     filters = JSON.parse(json[0]["filtersJSON".toLowerCase()] ? json[0]["filtersJSON".toLowerCase()] : "[]")
     favoriteSchedules = JSON.parse(json[0]["favoriteSchedulesJSON".toLowerCase()] ? json[0]["favoriteSchedulesJSON".toLowerCase()] : "[]")
   }
+}
+
+function shareSession(id)
+{
+  if (id == null || id == "")
+  {
+    return
+  }
+
+  var dataToSend = {
+    "command": "share",
+    "id": id
+  }
+
+  $.post(sessionSource, dataToSend, function(data) {
+    shareUUID = data[0]["shareUUID".toLowerCase()]
+  }).done(function() {
+    $("#sessionShare").show()
+    $("#sessionShare").val(window.location.protocol + "//" + window.location.host + window.location.pathname + "?shareUUID=" + shareUUID)
+  })
+}
+
+function copySession()
+{
+  $("#sessionShare")[0].focus()
+  $("#sessionShare")[0].select()
+  if (document.execCommand('Copy'))
+    alert("Copied!")
+}
+
+function postWithPromise(source, dataToSend, completion)
+{
+  var postPromise = new Promise(function(resolve, reject) {
+    $.post(source, dataToSend, function(data)
+    {
+      completion(data)
+      resolve()
+    })
+  })
+
+  return postPromise
 }
