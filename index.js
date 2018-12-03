@@ -361,6 +361,10 @@ function loadTeacherSelection()
   {
     var selectedCourseCodesTmp = []
 
+    courses.sort(function(a, b) {
+      return selectedCourseCodes.indexOf(a.courseCode) > selectedCourseCodes.indexOf(b.courseCode)
+    })
+
     for (courseNum in courses)
     {
       //Create a row for each object
@@ -440,8 +444,8 @@ function getCourses(courseCodeArray, completion)
   getJSON(dataSource,
   {
     "table": "courses",
-    "where": whereSQL,
-    "order": "departmentNumber,courseName asc"
+    "where": whereSQL/*,
+    "order": "departmentNumber,courseName asc"*/
   }, function(data)
   {
     var courses = []
