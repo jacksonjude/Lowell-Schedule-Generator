@@ -1,6 +1,7 @@
 const rootHost = "https://scheduledata2.herokuapp.com"
 const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
+const arenaSource = "http://lowell-courseselection.org"
 
 const maxClasses = 7
 const minClasses = 5
@@ -827,13 +828,24 @@ function sortBlockArray(selectedCourseCode)
 {
   var sortBlockArrayPromise = new Promise(function(resolveBlockArray, rejectBlockArray)
   {
-    getBlockDataFromCourseCodeAndSelectedTeachers(selectedCourseCode, "blockNumber,count(blockNumber),string_agg(teacher, '--')", function(data)
+    getBlockDataFromCourseCodeAndSelectedTeachers(selectedCourseCode, "blockNumber,count(blockNumber),string_agg(teacher, '--')", async function(data)
     {
       for (countNum in data)
       {
         if (parseInt(data[countNum]["count"]) > 0)
         {
-          blockArrays[parseInt(data[countNum]["blockNumber".toLowerCase()]) - 1][selectedCourseCode] = data[countNum]["string_agg"].split("--")
+          var teacherData = data[countNum]["string_agg"].split("--")
+          for (teacherNum in teacherData)
+          {
+            await checkForFullClass(selectedCourseCode, teacherData[teacherNum], data[countNum]["blockNumber".toLowerCase()]).then(function(full){
+              if (full)
+              {
+                teacherData.splice(teacherNum, 1)
+              }
+            })
+          }
+
+          blockArrays[parseInt(data[countNum]["blockNumber".toLowerCase()]) - 1][selectedCourseCode] = teacherData
         }
       }
 
@@ -1050,6 +1062,38 @@ async function displaySchedules(showMorePressed, completion)
     !showingFavorites ? setupFilterMenu() : false
 
   completion ? completion() : false
+}
+
+function checkForFullClass(courseCode, teacherName, blockNumber)
+{
+  var checkForFullClassPromise = new Promise(async function(resolve, reject) {
+    /*var courseName
+    await getCourseName(courseCode, function(courseNameTmp)
+    {
+      courseName = courseNameTmp
+    })*/
+
+    //var courseRegex = new RegExp("<tr>\\s*<td>AP STATISTICS B<\\/td><td>Ambrose<\\/td><td>1<\\/td><td>N<\\/td><td>(\\d*)<\\/td>\\s*<\\/tr>")
+
+    resolve(false)
+  })
+
+  return checkForFullClassPromise
+}
+
+function getArenaStats()
+{
+  /*$.ajax({
+    type: "POST",
+    url: arenaSource,
+  }, function(data) {
+
+  })*/
+
+  /*$.ajax({
+    type: "GET",
+    url: "courseselection.html"
+  })*/
 }
 
 function getScheduleBlockTeachers(whereSQL, completion)
