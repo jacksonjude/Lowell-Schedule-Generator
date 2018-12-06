@@ -101,3 +101,55 @@
   top: 0;
   background-color: #992222;
 }
+
+.loader {
+  border: 5px solid #f3f3f3;
+  /* Light grey */
+  border-top: 5px solid #3498db;
+  /* Blue */
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  animation: spin 0.5s linear infinite;
+  display: inline-block;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media screen and (min-width : 0px) and (max-width : 767px) {
+  .filterSelectionContainer {
+    right: 0px;
+    width: 470px;
+    position: relative;
+    display: inline-block;
+    padding-left: 20px;
+    vertical-align: top;
+    padding-top: 10px;
+    padding-bottom: 30px;
+  }
+
+  .myCoursesContainer, .myTeachersContainer, .myOffBlocksContainer {
+    position: relative;
+    display: flex;
+    max-width: 400px;
+
+    padding-top: 30px;
+  }
+
+  .myCourses, .myTeachers, .myOffBlocks {
+    padding-bottom: 10px;
+  }
+
+  #nextButton {
+    
+  }
+}

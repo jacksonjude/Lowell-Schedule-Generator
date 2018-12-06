@@ -39,6 +39,7 @@ $.ajaxSetup({
 
 $(function()
 {
+  addMobileMessages()
   setupSessionButtons()
 
   var url = new URL(window.location.href);
@@ -52,6 +53,37 @@ $(function()
     loadCourseSelection()
   }
 })
+
+function isMobile()
+{
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+}
+
+function addMobileMessages()
+{
+  if (isMobile())
+  {
+    window.addEventListener("orientationchange", function() {
+      editMobileMessages()
+    })
+    if (window.innerHeight > window.innerWidth)
+    {
+      $("#instructionsContainer").append("<span id='mmlandscape'><h3 style='color:white;'>* For a better experience, try viewing the website in landscape mode</h3></span>")
+    }
+  }
+}
+
+function editMobileMessages()
+{
+  if (window.innerHeight < window.innerWidth)
+  {
+    $("#mmlandscape").empty()
+  }
+  else
+  {
+    addMobileMessages()
+  }
+}
 
 function setupSessionButtons()
 {
@@ -1003,19 +1035,26 @@ async function displaySchedules(showMorePressed, completion)
           thisScheduleInnerHTML += courseName + " - "
         })
 
-        let filterForBlock = null
+        let filtersForBlock = []
         for (filterNum in filters)
         {
           if ((filters[filterNum]["blockNumber"] == scheduleBlockNum && filters[filterNum]["teacher"] != undefined) || (filters[filterNum]["blockNumber"] == "any" && filters[filterNum]["courseCode"] == schedules[scheduleNum][scheduleBlockNum]))
           {
-            filterForBlock = filters[filterNum]
-            break
+            filtersForBlock = filters[filterNum]
+            //break
           }
         }
 
-        if (filterForBlock != null && filterForBlock["teacher"] != "any")
+        if (filtersForBlock.length > 0 && filterForBlock["teacher"] != "any")
         {
-          thisScheduleInnerHTML += filterForBlock["teacher"]
+          for (filterNum in filtersForBlock)
+          {
+            if (filterNum != 0)
+            {
+              thisScheduleInnerHTML += " or "
+            }
+            thisScheduleInnerHTML += filtersForBlock[filterNum]["teacher"]
+          }
         }
         else
         {
