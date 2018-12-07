@@ -1,7 +1,7 @@
 const rootHost = "https://scheduledata2.herokuapp.com"
 const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
-const arenaSource = "http://lowell-courseselection.org"
+const arenaSource = rootHost + "/arena/"
 
 const maxClasses = 7
 const minClasses = 5
@@ -21,6 +21,7 @@ var checkboxesDisabled = false
 var checkboxes = []
 
 var courseNames = {}
+var currentSeatCounts = {}
 
 function getJSON(dataSource, arguments, callback)
 {
@@ -872,12 +873,20 @@ function sortBlockArray(selectedCourseCode)
             await checkForFullClass(selectedCourseCode, teacherData[teacherNum], data[countNum]["blockNumber".toLowerCase()]).then(function(full){
               if (full)
               {
+                console.log(full + " -- " + selectedCourseCode + " -- " + teacherData[teacherNum] + " -- " + data[countNum]["blockNumber".toLowerCase()])
                 teacherData.splice(teacherNum, 1)
               }
             })
           }
 
-          blockArrays[parseInt(data[countNum]["blockNumber".toLowerCase()]) - 1][selectedCourseCode] = teacherData
+          if (teacherData.length > 0)
+          {
+            blockArrays[parseInt(data[countNum]["blockNumber".toLowerCase()]) - 1][selectedCourseCode] = teacherData
+          }
+          else
+          {
+
+          }
         }
       }
 
@@ -1103,36 +1112,77 @@ async function displaySchedules(showMorePressed, completion)
   completion ? completion() : false
 }
 
+var arenaData = []
+
 function checkForFullClass(courseCode, teacherName, blockNumber)
 {
-  var checkForFullClassPromise = new Promise(async function(resolve, reject) {
-    /*var courseName
-    await getCourseName(courseCode, function(courseNameTmp)
+  var checkForFullClassPromise = new Promise(function(resolve, reject) {
+    getCourseName(courseCode, function(courseName)
     {
-      courseName = courseNameTmp
-    })*/
+      if (currentSeatCounts[courseName+teacherName+blockNumber] == undefined)
+      {
+        getArenaData().then(function(data) {
+          var full = false
 
-    //var courseRegex = new RegExp("<tr>\\s*<td>AP STATISTICS B<\\/td><td>Ambrose<\\/td><td>1<\\/td><td>N<\\/td><td>(\\d*)<\\/td>\\s*<\\/tr>")
+          var courseNameT = courseName.replace(/\s+/g, "\\s+").replace("Honors", "H").replace(/\./g, "")
+          var teacherNameT = teacherName.replace(/\s+/g, "\\s+")
+          var blockNumberT = blockNumber
+          var scheduleCodeT = "N"
+          var regexToTest = ["<tr>\\s*<td>\\s*" + courseNameT + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*" + courseNameT + "\\*" + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>"]
 
-    resolve(false)
+          for (regexNum in regexToTest)
+          {
+            var courseRegex = RegExp(regexToTest[regexNum], "gi")
+            var matches = []
+            var matchesTmp
+            while (matchesTmp = courseRegex.exec(data)) {
+              matches.push(matchesTmp[1])
+            }
+
+            if (matches.length > 0)
+            {
+              currentSeatCounts[courseName+teacherName+blockNumber] = parseInt(matches[(matches.length == 1) ? 0 : 1])
+              full = (parseInt(matches[(matches.length == 1) ? 0 : 1]) <= 0)
+              resolve(full)
+              return
+            }
+          }
+
+          console.log(regexToTest)
+          resolve(false)
+        })
+      }
+      else
+      {
+        resolve(currentSeatCounts[courseName+teacherName+blockNumber] <= 0)
+      }
+    })
   })
 
   return checkForFullClassPromise
 }
 
-function getArenaStats()
+var arenaData = null
+var arenaLastUpdated = 0
+
+function getArenaData()
 {
-  /*$.ajax({
-    type: "POST",
-    url: arenaSource,
-  }, function(data) {
+  var arenaDataPromise = new Promise(function(resolve, reject) {
+    if (arenaData == null || Date.now()-arenaLastUpdated > 180000)
+    {
+      $.get(arenaSource, {}, function(arenaDataTmp) {
+        arenaData = arenaDataTmp
+        arenaLastUpdated = Date.now()
+        resolve(arenaData)
+      })
+    }
+    else
+    {
+      resolve(arenaData)
+    }
+  })
 
-  })*/
-
-  /*$.ajax({
-    type: "GET",
-    url: "courseselection.html"
-  })*/
+  return arenaDataPromise
 }
 
 function getScheduleBlockTeachers(whereSQL, completion)
@@ -1355,7 +1405,7 @@ function addFilterSelectHTML(filterNum)
 
       var shouldReload = (filters[filterNumber]["teacher"] != undefined)
 
-      if (blockSelected == "none" || blockSelected == "any" || !(filters[filterNumber]["teacher"] == "any" || (filters[filterNumber]["courseCode"] != undefined && filters[filterNumber]["blockNumber"] != undefined && blockArrays[parseInt(filters[filterNumber]["blockNumber"])][filters[filterNumber]["courseCode"]].includes(filters[filterNumber]["teacher"]))))
+      if (blockSelected == "none" || blockSelected == "any" || !(filters[filterNumber]["teacher"] == "any" || (filters[filterNumber]["courseCode"] != undefined && filters[filterNumber]["blockNumber"] != undefined && Object.keys(blockArrays[parseInt(filters[filterNumber]["blockNumber"])]).includes(filters[filterNumber]["courseCode"]) && blockArrays[parseInt(filters[filterNumber]["blockNumber"])][filters[filterNumber]["courseCode"]].includes(filters[filterNumber]["teacher"]))))
       {
         delete filters[filterNumber]["teacher"]
       }
