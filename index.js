@@ -1128,7 +1128,7 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
           var teacherNameT = teacherName.replace(/\s+/g, "\\s+")
           var blockNumberT = blockNumber
           var scheduleCodeT = "N"
-          var regexToTest = ["<tr>\\s*<td>\\s*" + courseNameT + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*" + courseNameT + "\\*" + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>"]
+          var regexToTest = ["<tr>\\s*<td>\\s*" + courseNameT + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*" + courseNameT + "\\*" + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*CCSS\\s*" + courseNameT + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*CCSS\\s*" + courseNameT + "\\*" +  "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>"]
 
           for (regexNum in regexToTest)
           {
