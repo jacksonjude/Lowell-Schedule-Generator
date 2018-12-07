@@ -871,11 +871,11 @@ function sortBlockArray(selectedCourseCode)
           for (teacherNum in teacherData)
           {
             await checkForFullClass(selectedCourseCode, teacherData[teacherNum], data[countNum]["blockNumber".toLowerCase()]).then(function(full){
-              if (full)
+              /*if (full)
               {
                 console.log(full + " -- " + selectedCourseCode + " -- " + teacherData[teacherNum] + " -- " + data[countNum]["blockNumber".toLowerCase()])
                 teacherData.splice(teacherNum, 1)
-              }
+              }*/
             })
           }
 
@@ -885,7 +885,7 @@ function sortBlockArray(selectedCourseCode)
           }
           else
           {
-
+            delete blockArrays[parseInt(data[countNum]["blockNumber".toLowerCase()]) - 1][selectedCourseCode]
           }
         }
       }
@@ -1124,11 +1124,16 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
         getArenaData().then(function(data) {
           var full = false
 
-          var courseNameT = courseName.replace(/\s+/g, "\\s+").replace("Honors", "H").replace(/\./g, "")
-          var teacherNameT = teacherName.replace(/\s+/g, "\\s+")
+          var courseNameT = courseName.replace(/\s+/g, "\\s*").replace("Honors", "H").replace(/\./g, "")
+          var teacherNameT = teacherName.replace(/\s+/g, "\\s*")
           var blockNumberT = blockNumber
           var scheduleCodeT = "N"
           var regexToTest = ["<tr>\\s*<td>\\s*" + courseNameT + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*" + courseNameT + "\\*" + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*CCSS\\s*" + courseNameT + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*CCSS\\s*" + courseNameT + "\\*" +  "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>"]
+
+          if (/\s*MALDONADO,\s*A.\s*/.test(teacherName))
+          {
+            console.log(regexToTest)
+          }
 
           for (regexNum in regexToTest)
           {
