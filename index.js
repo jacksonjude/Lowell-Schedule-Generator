@@ -1121,7 +1121,7 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
     {
       if (currentSeatCounts[courseName+teacherName+blockNumber] == undefined)
       {
-        getArenaData().then(function(data) {
+        /*getArenaData().then(function(data) {
           var full = false
 
           var courseNameT = courseName.replace(/\s+/g, "\\s*").replace("Honors", "H").replace(/\./g, "")
@@ -1129,11 +1129,6 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
           var blockNumberT = blockNumber
           var scheduleCodeT = "N"
           var regexToTest = ["<tr>\\s*<td>\\s*" + courseNameT + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*" + courseNameT + "\\*" + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*CCSS\\s*" + courseNameT + "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>", "<tr>\\s*<td>\\s*CCSS\\s*" + courseNameT + "\\*" +  "\\s*<\\/td><td>\\s*" + teacherNameT + "\\s*<\\/td><td>\\s*" + blockNumberT + "\\s*<\\/td><td>\\s*" + scheduleCodeT + "\\s*<\\/td><td>\\s*(\\d*|-\\d*)\\s*<\\/td>\\s*<\\/tr>"]
-
-          if (/\s*MALDONADO,\s*A.\s*/.test(teacherName))
-          {
-            console.log(regexToTest)
-          }
 
           for (regexNum in regexToTest)
           {
@@ -1155,7 +1150,8 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
 
           console.log(regexToTest)
           resolve(false)
-        })
+        })*/
+        resolve(false)
       }
       else
       {
