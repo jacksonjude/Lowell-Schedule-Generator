@@ -938,12 +938,12 @@ function scheduleLoopSearch(indexOn)
     for (var object in Object.keys(blockArrays[indexOn]))
     {
       let courseBlock = Object.keys(blockArrays[indexOn])[object]
-      if (courseBlock.includes(offBlockID))
+      /*if (courseBlock.includes(offBlockID) && !currentSchedule.includes(courseBlock))
       {
         courseBlock = courseBlock.replace(courseBlock.replace(offBlockID, ""), "")
-      }
+      }*/
 
-      if (currentSchedule.includes(courseBlock) && (courseBlock != offBlockID || countInArray(currentSchedule, courseBlock) >= maxClasses + 1 - selectedCourseCodes.length))
+      if (currentSchedule.includes(courseBlock) /*&& (courseBlock != offBlockID || countInArray(currentSchedule, courseBlock) >= maxClasses + 1 - selectedCourseCodes.length)*/)
       {
         continue
       }
@@ -1031,7 +1031,7 @@ async function displaySchedules(showMorePressed, completion)
     let thisScheduleInnerHTML = ""
     for (scheduleBlockNum in schedules[scheduleNum])
     {
-      if (schedules[scheduleNum][scheduleBlockNum] == offBlockID)
+      if (schedules[scheduleNum][scheduleBlockNum].includes(offBlockID))
       {
         thisScheduleInnerHTML += "Block " + (parseInt(scheduleBlockNum) + 1).toString() + ": Off Block<br>"
       }
@@ -1450,7 +1450,7 @@ function addFilterSelectHTML(filterNum)
 
 function addFilterBlockSelectionOptions(blockFilterSelect, filterNum)
 {
-  if (filters[filterNum]["courseCode"] != offBlockID)
+  if (filters[filterNum]["courseCode"] == null || !filters[filterNum]["courseCode"].includes(offBlockID))
   {
     for (var blockNum = 0; blockNum < maxClasses + 1; blockNum++)
     {
@@ -1488,9 +1488,9 @@ function addFilterTeacherSelectionOptions(teacherFilterSelect, filterNum)
   var teachersToSelect
   if (filters[filterNum]["blockNumber"] != "any")
   {
-    teachersToSelect = (filters[filterNum]["courseCode"] != null && filters[filterNum]["courseCode"] != offBlockID && filters[filterNum]["blockNumber"] != null) ? blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]] : []
+    teachersToSelect = (filters[filterNum]["courseCode"] != null && !filters[filterNum]["courseCode"].includes(offBlockID) && filters[filterNum]["blockNumber"] != null) ? blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]] : []
   }
-  else if (filters[filterNum]["courseCode"] != offBlockID)
+  else if (filters[filterNum]["courseCode"] == null || !filters[filterNum]["courseCode"].includes(offBlockID))
   {
     teachersToSelect = selectedTeachers[selectedCourseCodes.indexOf(filters[filterNum]["courseCode"])]
   }
