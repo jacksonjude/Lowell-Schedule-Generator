@@ -927,6 +927,7 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
 function createSchedules()
 {
   scheduleLoopSearch(0, [])
+  schedules = removeUniqueOffBlocks(schedules)
   schedules = multiDimensionalUnique(schedules)
   console.log(schedules)
 }
@@ -967,7 +968,7 @@ function scheduleLoopSearch(indexOn)
             break
           }
         }
-        else if (!(currentSchedule[parseInt(filters[filterNum]["blockNumber"])] == filters[filterNum]["courseCode"] && (filters[filterNum]["teacher"] == null || filters[filterNum]["teacher"] == "any" || blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))))
+        else if (!((currentSchedule[parseInt(filters[filterNum]["blockNumber"])] == filters[filterNum]["courseCode"] || (currentSchedule[parseInt(filters[filterNum]["blockNumber"])].includes(offBlockID) && filters[filterNum]["courseCode"].includes(offBlockID))) && (filters[filterNum]["teacher"] == null || filters[filterNum]["teacher"] == "any" || blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))))
         {
           shouldAddSchedule = false
           break
@@ -1000,6 +1001,21 @@ function multiDimensionalUnique(arr)
     itemsFound[stringified] = true
   }
   return uniques
+}
+
+function removeUniqueOffBlocks(schedules)
+{
+  for (var i = 0; i < schedules.length; i++)
+  {
+    for (var j = 0; j < schedules[i].length; j++)
+    {
+      if (schedules[i][j].includes(offBlockID))
+      {
+        schedules[i][j] = offBlockID;
+      }
+    }
+  }
+  return schedules;
 }
 
 function countInArray(array, what)
