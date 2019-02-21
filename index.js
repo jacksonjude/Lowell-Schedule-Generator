@@ -1137,7 +1137,7 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
     {
       if (currentSeatCounts[courseName+teacherName+blockNumber] == undefined)
       {
-        /*getArenaData().then(function(data) {
+        getArenaData().then(function(data) {
           var full = false
 
           var courseNameT = courseName.replace(/\s+/g, "\\s*").replace("Honors", "H").replace(/\./g, "")
@@ -1166,8 +1166,8 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
 
           console.log(regexToTest)
           resolve(false)
-        })*/
-        resolve(false)
+        })
+        //resolve(false)
       }
       else
       {
