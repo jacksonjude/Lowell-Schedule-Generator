@@ -3,7 +3,7 @@ const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
 const arenaSource = rootHost + "/arena/"
 
-const maxClasses = 8
+const maxClasses = 7
 const minClasses = 5
 
 var departments = []
@@ -295,7 +295,7 @@ function checkedCourse(checkbox)
     }
 
     //Disable the checkboxes if the class max is reached
-    if (selectedCourseCodes.length == maxClasses)
+    if (selectedCourseCodes.length == maxClasses+1)
     {
       checkboxesDisabled = true
 
@@ -330,7 +330,7 @@ function checkedCourse(checkbox)
     selectedCourseCodes.splice(selectedCourseCodes.indexOf($(checkbox).attr("id")), 1)
 
     //Re-enable check boxes if the selectedCourseCodes count is maxClasses-1
-    if (selectedCourseCodes.length == maxClasses - 1)
+    if (selectedCourseCodes.length == maxClasses - 1 + 1)
     {
       checkboxesDisabled = false
 
