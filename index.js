@@ -1146,7 +1146,7 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
         getArenaData().then(function(data) {
           var full = false
 
-          var courseNameT = courseName.replace(/\s+/g, "\\s*").replace("Honors", "H").replace(/\./g, "")
+          /*var courseNameT = courseName.replace(/\s+/g, "\\s*").replace("Honors", "H").replace(/\./g, "")
           var teacherNameT = teacherName.replace(/\s+/g, "\\s*")
           var blockNumberT = blockNumber
           var scheduleCodeT = "N"
@@ -1170,8 +1170,24 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
             }
           }
 
-          //console.log(data)
-          console.log(regexToTest)
+          console.log(data)
+          console.log(regexToTest)*/
+
+          var courseNameT = courseName.replace("Honors", "H").replace("*", "")
+          var teacherNameT = teacherName
+          var blockNumberT = blockNumber
+
+          for (classNum in data)
+          {
+            if (data[classNum][0].replace("CCSS ", "").replace(/\s*\*/g, "").toUpperCase() == courseNameT.toUpperCase() && data[classNum][1] == teacherNameT && data[classNum][2] == blockNumberT)
+            {
+              currentSeatCounts[courseName+teacherName+blockNumber] = parseInt(data[classNum][4])
+              full = parseInt(data[classNum][4]) <= 0
+              resolve(full)
+              return
+            }
+          }
+
           resolve(false)
         })
         //resolve(false)
