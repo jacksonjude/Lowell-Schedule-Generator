@@ -3,7 +3,7 @@ const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
 const arenaSource = rootHost + "/arena/"
 
-const maxClasses = 7
+const maxClasses = 8
 const minClasses = 5
 
 var departments = []
@@ -40,7 +40,7 @@ $.ajaxSetup({
 
 $(function()
 {
-  addMobileMessages()
+  //addMobileMessages()
   setupSessionButtons()
 
   var url = new URL(window.location.href);
@@ -871,11 +871,11 @@ function sortBlockArray(selectedCourseCode)
           for (teacherNum in teacherData)
           {
             await checkForFullClass(selectedCourseCode, teacherData[teacherNum], data[countNum]["blockNumber".toLowerCase()]).then(function(full){
-              /*if (full)
+              if (full)
               {
                 console.log(full + " -- " + selectedCourseCode + " -- " + teacherData[teacherNum] + " -- " + data[countNum]["blockNumber".toLowerCase()])
                 teacherData.splice(teacherNum, 1)
-              }*/
+              }
             })
           }
 
@@ -1164,6 +1164,7 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
             }
           }
 
+          console.log(data)
           console.log(regexToTest)
           resolve(false)
         })
