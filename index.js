@@ -814,7 +814,7 @@ async function generateSchedules(completion)
   var filtersToKeep = []
   for (filterNum in filters)
   {
-    if (selectedCourseCodes.includes(filters[filterNum]["courseCode"]) && selectedTeachers[selectedCourseCodes.indexOf(filters[filterNum]["courseCode"])].includes(filters[filterNum]["teacher"]))
+    if ((filters[filterNum]["courseCode"] == offBlockID || selectedCourseCodes.includes(filters[filterNum]["courseCode"])) && (filters[filterNum]["teacher"] == "any" || selectedTeachers[selectedCourseCodes.indexOf(filters[filterNum]["courseCode"])].includes(filters[filterNum]["teacher"])))
     {
       filtersToKeep.push(filters[filterNum])
     }
