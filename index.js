@@ -680,6 +680,12 @@ function loadOffBlockSelection()
     selectedOffBlocks.push([])
   }
 
+  if (selectedOffBlocks.length == 0)
+  {
+    generateSchedules()
+    return
+  }
+
   reloadMyOffBlocks()
 
   selectedOffBlockNumber = "1"
@@ -1164,7 +1170,7 @@ function checkForFullClass(courseCode, teacherName, blockNumber)
             }
           }
 
-          console.log(data)
+          //console.log(data)
           console.log(regexToTest)
           resolve(false)
         })
