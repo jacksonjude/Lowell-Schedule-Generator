@@ -154,3 +154,8 @@
     right: 150;
   }
 }
+
+.scrollerText {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}

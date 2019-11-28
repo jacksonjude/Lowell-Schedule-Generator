@@ -121,7 +121,7 @@ function loadCourseSelection()
     //Create a row for each object
     for (departmentObject in departments)
     {
-      var departmentRow = $("<div class='departmentScroller' id='dep" + departments[departmentObject].departmentNum + "'><span style='z-index:2; position:relative;'><h3 style='color:WHITE;'>" + departments[departmentObject].departmentTitle + "</h3></span></div>")
+      var departmentRow = $("<div class='departmentScroller' id='dep" + departments[departmentObject].departmentNum + "'><span style='z-index:2; position:relative;'><h3 class='scrollerText' style='color:WHITE;'>" + departments[departmentObject].departmentTitle + "</h3></span></div>")
       departmentRow.attr("onclick", "selectDepartment(this)")
       $(".departmentScrollerContainer").append(departmentRow)
     }
@@ -402,7 +402,7 @@ function loadTeacherSelection()
     for (courseNum in courses)
     {
       //Create a row for each object
-      var courseRow = $("<div class='courseScroller' id='course" + courses[courseNum].courseCode + "'><span style='z-index:2; position:relative;'><h3 style='color:WHITE;'>" + courses[courseNum].courseName + "</h3></span></div>")
+      var courseRow = $("<div class='courseScroller' id='course" + courses[courseNum].courseCode + "'><span style='z-index:2; position:relative;'><h3 class='scrollerText' style='color:WHITE;'>" + courses[courseNum].courseName + "</h3></span></div>")
       courseRow.attr("onclick", "selectCourse(this)")
       $(".courseScrollerContainer").append(courseRow)
 
@@ -665,7 +665,7 @@ function loadOffBlockSelection()
 
   for (var i = 0; i < maxClasses + 1 - selectedCourseCodes.length; i++)
   {
-    var offBlockRow = $("<div class='offBlockScroller' id='offBlock" + (i + 1).toString() + "'><span style='z-index:2; position:relative;'><h3 style='color:WHITE;'>" + "Off Block #" + (i + 1).toString() + "</h3></span></div>")
+    var offBlockRow = $("<div class='offBlockScroller' id='offBlock" + (i + 1).toString() + "'><span style='z-index:2; position:relative;'><h3 class='scrollerText' style='color:WHITE;'>" + "Off Block #" + (i + 1).toString() + "</h3></span></div>")
     offBlockRow.attr("onclick", "selectOffBlock(this)")
     $(".offBlockScrollerContainer").append(offBlockRow)
 
