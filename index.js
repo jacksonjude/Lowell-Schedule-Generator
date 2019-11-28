@@ -1528,11 +1528,11 @@ function addFilterBlockSelectionOptions(blockFilterSelect, filterNum)
 function addFilterTeacherSelectionOptions(teacherFilterSelect, filterNum)
 {
   var teachersToSelect
-  if (filters[filterNum]["blockNumber"] != "any")
+  if (filters[filterNum]["blockNumber"] != null && filters[filterNum]["blockNumber"] != "any")
   {
     teachersToSelect = (filters[filterNum]["courseCode"] != null && !filters[filterNum]["courseCode"].includes(offBlockID) && filters[filterNum]["blockNumber"] != null) ? blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]] : []
   }
-  else if (filters[filterNum]["courseCode"] == null || !filters[filterNum]["courseCode"].includes(offBlockID))
+  else if (filters[filterNum]["courseCode"] != null && !filters[filterNum]["courseCode"].includes(offBlockID))
   {
     teachersToSelect = selectedTeachers[selectedCourseCodes.indexOf(filters[filterNum]["courseCode"])]
   }
