@@ -1139,6 +1139,9 @@ var arenaData = []
 function checkForFullClass(courseCode, teacherName, blockNumber)
 {
   var checkForFullClassPromise = new Promise(function(resolve, reject) {
+    resolve(false)
+    return //disabling
+
     getCourseName(courseCode, function(courseName)
     {
       if (currentSeatCounts[courseName+teacherName+blockNumber] == undefined)
