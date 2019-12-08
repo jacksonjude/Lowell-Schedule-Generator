@@ -264,7 +264,8 @@ function getCoursesFromDepartment(departmentNumber, completion)
     "table": "courses",
     "column": "courseName,courseCode",
     "key": "departmentNumber",
-    "value": departmentNumber
+    "value": departmentNumber,
+    "order": "courseName"
   }, function(data)
   {
     var courses = []
