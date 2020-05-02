@@ -3,6 +3,7 @@ function SchoolCourse(courseArray)
   this.departmentNum = courseArray["departmentNumber".toLowerCase()]
   this.courseCode = courseArray["courseCode".toLowerCase()]
   this.courseName = courseArray["courseName".toLowerCase()]
+  this.semester = courseArray["semester".toLowerCase()]
 }
 
 function SchoolBlock(blockArray)

@@ -6,6 +6,10 @@ const arenaSource = rootHost + "/arena/"
 const maxClasses = 7
 const minClasses = 5
 
+const firstSemesterID = 1
+const secondSemesterID = 2
+const allYearID = 0
+
 var departments = []
 
 var selectedDepartment = "0"
@@ -14,8 +18,9 @@ var selectedCourseCodes = []
 var selectedCourse = "0"
 var selectedTeachers = []
 
+var selectedOffBlockSemester = "0"
 var selectedOffBlockNumber = "0"
-var selectedOffBlocks = []
+var selectedOffBlocks = [[], []]
 
 var checkboxesDisabled = false
 var checkboxes = []
@@ -100,7 +105,7 @@ function setupSessionButtons()
 
 //MARK: - Course Selection
 
-function loadCourseSelection()
+async function loadCourseSelection()
 {
   showingFavorites = false
 
@@ -139,7 +144,8 @@ function loadCourseSelection()
   {
     addToMyCourses(selectedCourseCodes[courseCodeNum])
   }
-  if (selectedCourseCodes.length >= minClasses)
+
+  if (getCourseCount(selectedCourseCodes, firstSemesterID) >= minClasses && getCourseCount(selectedCourseCodes, secondSemesterID) >= minClasses)
   {
     $(".myCourses").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
   }
@@ -234,8 +240,10 @@ function moveSelectionBox(currentIDPrefix, movementDirection, overrideCheck)
     $("#selectionbox").css("height", $(currentIDPrefix + selectedItem).css("height"))
     var percentToMove = moveBoxInterval/timeToMoveBox
     var topPosition = $("#selectionbox").position().top
-    //console.log(itemToMoveFrom + " -- " + selectedItem)
+
     var positionToMoveTo = $(currentIDPrefix + selectedItem).offset().top
+    if ($(currentIDPrefix + itemToMoveFrom).offset() == null)
+      return
     var positionToMoveFrom = $(currentIDPrefix + itemToMoveFrom).offset().top
 
     var moveAmount = (positionToMoveTo-positionToMoveFrom)*percentToMove
@@ -281,7 +289,7 @@ function getCoursesFromDepartment(departmentNumber, completion)
   })
 }
 
-function checkedCourse(checkbox)
+async function checkedCourse(checkbox)
 {
   //When a course checkbox is checked
   if (checkbox.checked)
@@ -296,7 +304,9 @@ function checkedCourse(checkbox)
     }
 
     //Disable the checkboxes if the class max is reached
-    if (selectedCourseCodes.length == maxClasses+1)
+    var firstSemesterCourseCount = await getCourseCount(selectedCourseCodes, firstSemesterID)
+    var secondSemesterCourseCount = await getCourseCount(selectedCourseCodes, secondSemesterID)
+    if (firstSemesterCourseCount > maxClasses || secondSemesterCourseCount > maxClasses)
     {
       checkboxesDisabled = true
 
@@ -313,8 +323,8 @@ function checkedCourse(checkbox)
     //Add the course to the selected course container
     addToMyCourses($(checkbox).attr("id"))
 
-    //Add a nextButton if there are enough selectedCourses
-    if (selectedCourseCodes.length == minClasses)
+    //Add a nextButton if there are enough selectedCourses and a next button does not exist yet
+    if (firstSemesterCourseCount >= minClasses && secondSemesterCourseCount >= minClasses && $("#nextButton").length == 0)
     {
       $(".myCourses").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
     }
@@ -331,7 +341,9 @@ function checkedCourse(checkbox)
     selectedCourseCodes.splice(selectedCourseCodes.indexOf($(checkbox).attr("id")), 1)
 
     //Re-enable check boxes if the selectedCourseCodes count is maxClasses-1
-    if (selectedCourseCodes.length == maxClasses - 1 + 1)
+    var firstSemesterCourseCount = await getCourseCount(selectedCourseCodes, firstSemesterID)
+    var secondSemesterCourseCount = await getCourseCount(selectedCourseCodes, secondSemesterID)
+    if (firstSemesterCourseCount <= maxClasses || secondSemesterCourseCount <= maxClasses)
     {
       checkboxesDisabled = false
 
@@ -348,7 +360,7 @@ function checkedCourse(checkbox)
     removeFromMyCourses($(checkbox).attr("id"))
 
     //Remove the nextButton if there aren't enough classes
-    if (selectedCourseCodes.length == minClasses - 1)
+    if (firstSemesterCourseCount < minClasses && secondSemesterCourseCount < minClasses && $("#nextButton").length)
     {
       $(".myCourses").find("#nextButton").remove()
     }
@@ -651,37 +663,33 @@ function selectAllTeachers()
 
 //MARK: - Off Block Selection
 
-function loadOffBlockSelection()
+async function loadOffBlockSelection()
 {
   checkboxes = []
   checkboxesDisabled = false
 
+  selectedOffBlockSemester = "0"
   selectedOffBlockNumber = "0"
 
   setupOffBlockSelectionElements()
 
   console.log(selectedTeachers)
 
-  var updateSelectedOffBlocks = (selectedOffBlocks.length == 0)
+  var updateSelectedOffBlocks = offBlockArraysEmpty()
 
-  for (var i = 0; i < maxClasses + 1 - selectedCourseCodes.length; i++)
-  {
-    var offBlockRow = $("<div class='offBlockScroller' id='offBlock" + (i + 1).toString() + "'><span style='z-index:2; position:relative;'><h3 class='scrollerText' style='color:WHITE;'>" + "Off Block #" + (i + 1).toString() + "</h3></span></div>")
-    offBlockRow.attr("onclick", "selectOffBlock(this)")
-    $(".offBlockScrollerContainer").append(offBlockRow)
+  var firstSemesterCourseCount = await getCourseCount(firstSemesterID)
+  var secondSemesterCourseCount = await getCourseCount(secondSemesterID)
 
-    if (updateSelectedOffBlocks)
-    {
-      selectedOffBlocks.push([])
-    }
-  }
+  addOffBlockDivs(firstSemesterCourseCount, firstSemesterID, updateSelectedOffBlocks)
+  addOffBlockDivs(secondSemesterCourseCount, secondSemesterID, updateSelectedOffBlocks)
 
-  while (!updateSelectedOffBlocks && selectedOffBlocks.length != maxClasses + 1 - selectedCourseCodes.length)
-  {
-    selectedOffBlocks.push([])
-  }
+  //Dont know what this does...
+  // while (!updateSelectedOffBlocks && selectedOffBlocks.length != maxClasses + 1 - selectedCourseCodes.length)
+  // {
+  //   selectedOffBlocks.push([])
+  // }
 
-  if (selectedOffBlocks.length == 0)
+  if (offBlockArraysEmpty())
   {
     generateSchedules()
     return
@@ -689,6 +697,7 @@ function loadOffBlockSelection()
 
   reloadMyOffBlocks()
 
+  selectedOffBlockSemester = "1"
   selectedOffBlockNumber = "1"
   selectOffBlock("#offBlock1")
   selectedItem = "1"
@@ -696,6 +705,29 @@ function loadOffBlockSelection()
   moveSelectionBox("#offBlock", 1, true)
 
   $("#instructions").html("Choose any off blocks you would like to have and then click \"Next\"")
+}
+
+function offBlockArraysEmpty()
+{
+  for (offBlockArrayNum in selectedOffBlocks)
+    if (selectedOffBlocks[offBlockArrayNum].length > 0)
+      return false
+  return true
+}
+
+function addOffBlockDivs(courseCount, semesterID, updateSelectedOffBlocks)
+{
+  for (var i = 0; i < maxClasses + 1 - courseCount; i++)
+  {
+    var offBlockRow = $("<div class='offBlockScroller' id='offBlock" + (calculateAbsoluteOffBlockNumber(semesterID, i)).toString() + "'><span style='z-index:2; position:relative;'><h3 class='scrollerText' style='color:WHITE;'>" + "Off Block S" + semesterID + " #" + (i + 1).toString() + "</h3></span></div>")
+    offBlockRow.attr("onclick", "selectOffBlock(this)")
+    $(".offBlockScrollerContainer").append(offBlockRow)
+
+    if (updateSelectedOffBlocks)
+    {
+      selectedOffBlocks[semesterID-1].push([])
+    }
+  }
 }
 
 function setupOffBlockSelectionElements()
@@ -711,14 +743,18 @@ function setupOffBlockSelectionElements()
 
 function selectOffBlock(offBlockElement)
 {
-  var itemToMoveFromTmp = selectedOffBlockNumber
-  selectedOffBlockNumber = $(offBlockElement).attr("id").replace("offBlock", "")
+  var itemToMoveFromTmp = selectedItem
+  var selectedOffBlockID = $(offBlockElement).attr("id").replace("offBlock", "")
+  var selectedOffBlockIndex = calculateRelativeOffBlockIndex(selectedOffBlockID)
+  selectedOffBlockSemester = selectedOffBlockIndex[0]
+  console.log(selectedOffBlockSemester)
+  selectedOffBlockNumber = selectedOffBlockIndex[1]
 
-  if (itemToMoveFromTmp != selectedOffBlockNumber)
+  if (itemToMoveFromTmp != selectedOffBlockID)
   {
-    selectedItem = selectedOffBlockNumber
+    selectedItem = selectedOffBlockID
     itemToMoveFrom = itemToMoveFromTmp
-    var movementDirection = Math.sign(selectedOffBlockNumber - itemToMoveFrom)
+    var movementDirection = Math.sign(selectedOffBlockID - itemToMoveFrom)
     moveSelectionBox("#offBlock", movementDirection)
   }
 
@@ -732,8 +768,8 @@ function selectOffBlock(offBlockElement)
     offBlockInput.attr("id", (i + 1).toString())
     offBlockInput.attr("type", "checkbox")
     offBlockInput.attr("onclick", "checkedOffBlock(this)")
-    offBlockInput.prop("disabled", (checkboxesDisabled && !selectedOffBlocks[parseInt(selectedOffBlockNumber) - 1].includes(i + 1)))
-    offBlockInput.prop("checked", (selectedOffBlocks[parseInt(selectedOffBlockNumber) - 1].includes(i + 1)))
+    offBlockInput.prop("disabled", (checkboxesDisabled && !selectedOffBlocks[parseInt(selectedOffBlockSemester)][parseInt(selectedOffBlockNumber) - 1].includes(i + 1)))
+    offBlockInput.prop("checked", (selectedOffBlocks[parseInt(selectedOffBlockSemester)][parseInt(selectedOffBlockNumber) - 1].includes(i + 1)))
     offBlockSelection.append(offBlockInput)
     offBlockSelection.append(" " + "Block " + (i + 1).toString() + "<br>")
 
@@ -742,15 +778,40 @@ function selectOffBlock(offBlockElement)
   offBlockSelection.append("<br>")
 }
 
+function calculateAbsoluteOffBlockNumber(semester, semesterOffBlockNumber)
+{
+  var absoluteOffBlockNumber = 1
+  for (var i=0; i < parseInt(semester)-1; i++)
+  {
+    absoluteOffBlockNumber += selectedOffBlocks[i].length
+  }
+  absoluteOffBlockNumber += parseInt(semesterOffBlockNumber)
+
+  return absoluteOffBlockNumber
+}
+
+function calculateRelativeOffBlockIndex(absoluteOffBlockNumber)
+{
+  var relativeOffBlockNumber = absoluteOffBlockNumber
+  var semesterOn = 0
+  while (relativeOffBlockNumber > selectedOffBlocks[semesterOn].length)
+  {
+    relativeOffBlockNumber -= selectedOffBlocks[semesterOn].length
+    semesterOn += 1
+  }
+
+  return [semesterOn, relativeOffBlockNumber]
+}
+
 function checkedOffBlock(checkbox)
 {
   if (checkbox.checked)
   {
-    selectedOffBlocks[parseInt(selectedOffBlockNumber) - 1].push(parseInt($(checkbox).attr("id")))
+    selectedOffBlocks[parseInt(selectedOffBlockSemester)][parseInt(selectedOffBlockNumber) - 1].push(parseInt($(checkbox).attr("id")))
   }
   else
   {
-    selectedOffBlocks[parseInt(selectedOffBlockNumber) - 1].splice(selectedOffBlocks[parseInt(selectedOffBlockNumber) - 1].indexOf(parseInt($(checkbox).attr("id"))), 1)
+    selectedOffBlocks[parseInt(selectedOffBlockSemester)][parseInt(selectedOffBlockNumber) - 1].splice(selectedOffBlocks[parseInt(selectedOffBlockSemester)][parseInt(selectedOffBlockNumber) - 1].indexOf(parseInt($(checkbox).attr("id"))), 1)
   }
 
   reloadMyOffBlocks()
@@ -761,22 +822,28 @@ function reloadMyOffBlocks()
   $(".myOffBlocks").empty()
   $(".myOffBlocks").append("<h3><div id='myOffBlocksTitle'>My Off Blocks</div></h3>")
 
-  for (offBlockArrayNum in selectedOffBlocks)
+  for (semesterOn in selectedOffBlocks)
   {
-    for (offBlockNum in selectedOffBlocks[offBlockArrayNum].sort())
+    for (offBlockArrayNum in selectedOffBlocks[semesterOn])
     {
-      $(".myOffBlocks").append("<div id='" + (parseInt(offBlockArrayNum) + 1).toString() + selectedOffBlocks[offBlockArrayNum][offBlockNum].toString() + "'>" + "<div style='display:inline;" + (offBlockNum == 0 ? "" : "visibility:hidden;") + "'>" + ("#" + (parseInt(offBlockArrayNum) + 1).toString()) + "</div>" + " - Block " + selectedOffBlocks[offBlockArrayNum][offBlockNum].toString() + "</div>")
+      for (offBlockNum in selectedOffBlocks[semesterOn][offBlockArrayNum].sort())
+      {
+        $(".myOffBlocks").append("<div id='" + (parseInt(semesterOn)+1).toString() + (parseInt(offBlockArrayNum) + 1).toString() + selectedOffBlocks[semesterOn][offBlockArrayNum][offBlockNum].toString() + "'>" + "<div style='display:inline;" + (offBlockNum == 0 ? "" : "visibility:hidden;") + "'>" + ("S" + (parseInt(semesterOn)+1) + " #" + (parseInt(offBlockArrayNum) + 1).toString()) + "</div>" + " - Block " + selectedOffBlocks[semesterOn][offBlockArrayNum][offBlockNum].toString() + "</div>")
+      }
     }
   }
 
   var canContinue = true
-  for (offBlockNum in selectedOffBlocks)
+  for (semesterOn in selectedOffBlocks)
   {
-    for (offBlockNum2 in selectedOffBlocks)
+    for (offBlockNum in selectedOffBlocks[semesterOn])
     {
-      if ((offBlockNum != offBlockNum2 && selectedOffBlocks[offBlockNum].sort().join(',') === selectedOffBlocks[offBlockNum2].sort().join(',') && selectedOffBlocks[offBlockNum].length < selectedOffBlocks.length && selectedOffBlocks[offBlockNum2].length < selectedOffBlocks.length) || selectedOffBlocks[offBlockNum].length == 0 || selectedOffBlocks[offBlockNum2].length == 0)
+      for (offBlockNum2 in selectedOffBlocks[semesterOn])
       {
-        canContinue = false
+        if ((offBlockNum != offBlockNum2 && selectedOffBlocks[semesterOn][offBlockNum].sort().join(',') === selectedOffBlocks[semesterOn][offBlockNum2].sort().join(',') && selectedOffBlocks[semesterOn][offBlockNum].length < selectedOffBlocks[semesterOn].length && selectedOffBlocks[semesterOn][offBlockNum2].length < selectedOffBlocks[semesterOn].length) || selectedOffBlocks[semesterOn][offBlockNum].length == 0 || selectedOffBlocks[semesterOn][offBlockNum2].length == 0)
+        {
+          canContinue = false
+        }
       }
     }
   }
@@ -798,6 +865,22 @@ function selectAllOffBlocks()
     checkbox.prop("checked", true)
     checkedOffBlock(checkbox[0])
   }
+}
+
+function getCourseCount(semester)
+{
+  var courseCountPromise = new Promise((resolve, reject) => {
+    var selectedCourses = getCourses(selectedCourseCodes, function(courses) {
+      console.log(courses)
+      var courseCount = 0
+      for (courseNum in courses)
+        if (courses[courseNum].semester == semester || courses[courseNum].semester == allYearID)
+          courseCount += 1
+      resolve(courseCount)
+    })
+  })
+
+  return courseCountPromise
 }
 
 //MARK: - Generate Schedules
@@ -1718,7 +1801,7 @@ function shareSession(id)
   }
 
   var shareUUID
-  
+
   $.post(sessionSource, dataToSend, function(data) {
     shareUUID = data[0]["shareUUID".toLowerCase()]
   }).done(function() {
