@@ -1,4 +1,4 @@
-const rootHost = "https://scheduledata2.herokuapp.com"
+const rootHost = "https://scheduledata.herokuapp.com"
 const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
 const arenaSource = rootHost + "/arena/"
@@ -874,13 +874,17 @@ function sortBlockArray(selectedCourseCode)
       {
         if (parseInt(data[countNum]["count"]) > 0)
         {
+          var blockNumber = data[countNum]["blockNumber".toLowerCase()].toString()
+          if (blockNumber.length >= 2)
+            blockNumber = blockNumber.charAt(blockNumber.length-1)
+
           var teacherData = data[countNum]["string_agg"].split("--")
           for (teacherNum in teacherData)
           {
-            await checkForFullClass(selectedCourseCode, teacherData[teacherNum], data[countNum]["blockNumber".toLowerCase()]).then(function(full){
+            await checkForFullClass(selectedCourseCode, teacherData[teacherNum], blockNumber).then(function(full){
               if (full)
               {
-                console.log(full + " -- " + selectedCourseCode + " -- " + teacherData[teacherNum] + " -- " + data[countNum]["blockNumber".toLowerCase()])
+                console.log(full + " -- " + selectedCourseCode + " -- " + teacherData[teacherNum] + " -- " + blockNumber)
                 teacherData.splice(teacherNum, 1)
               }
             })
@@ -888,11 +892,11 @@ function sortBlockArray(selectedCourseCode)
 
           if (teacherData.length > 0)
           {
-            blockArrays[parseInt(data[countNum]["blockNumber".toLowerCase()]) - 1][selectedCourseCode] = teacherData
+            blockArrays[parseInt(blockNumber) - 1][selectedCourseCode] = teacherData
           }
           else
           {
-            delete blockArrays[parseInt(data[countNum]["blockNumber".toLowerCase()]) - 1][selectedCourseCode]
+            delete blockArrays[parseInt(blockNumber) - 1][selectedCourseCode]
           }
         }
       }
@@ -1713,6 +1717,8 @@ function shareSession(id)
     "id": id
   }
 
+  var shareUUID
+  
   $.post(sessionSource, dataToSend, function(data) {
     shareUUID = data[0]["shareUUID".toLowerCase()]
   }).done(function() {
