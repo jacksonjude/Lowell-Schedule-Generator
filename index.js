@@ -145,7 +145,10 @@ async function loadCourseSelection()
     addToMyCourses(selectedCourseCodes[courseCodeNum])
   }
 
-  if (getCourseCount(selectedCourseCodes, firstSemesterID) >= minClasses && getCourseCount(selectedCourseCodes, secondSemesterID) >= minClasses)
+  var firstSemesterCourseCount = await getCourseCount(selectedCourseCodes, firstSemesterID)
+  var secondSemesterCourseCount = await getCourseCount(selectedCourseCodes, secondSemesterID)
+
+  if (firstSemesterCourseCount >= minClasses && secondSemesterCourseCount >= minClasses)
   {
     $(".myCourses").append("<input id='nextButton' type='button' value='Next' onclick='loadTeacherSelection()'>")
   }
@@ -871,7 +874,6 @@ function getCourseCount(semester)
 {
   var courseCountPromise = new Promise((resolve, reject) => {
     var selectedCourses = getCourses(selectedCourseCodes, function(courses) {
-      console.log(courses)
       var courseCount = 0
       for (courseNum in courses)
         if (courses[courseNum].semester == semester || courses[courseNum].semester == allYearID)
@@ -888,7 +890,7 @@ function getCourseCount(semester)
 const offBlockID = "OFFBLOCK"
 const scheduleDisplayCount = 10
 
-var blockArrays = []
+var blockArrays = [[], []]
 var filters = []
 var favoriteSchedules = {}
 
@@ -900,7 +902,7 @@ var showingFavorites = false
 
 async function generateSchedules(completion)
 {
-  blockArrays = []
+  blockArrays = [[], []]
   var filtersToKeep = []
   for (filterNum in filters)
   {
@@ -915,39 +917,45 @@ async function generateSchedules(completion)
   $("#selection").empty()
   $("#instructions").html("Generating...")
 
+  //First semester generation
+  generateSchedulesForSemester(0, completion)
+}
+
+async function generateSchedulesForSemester(semesterNumber, completion)
+{
   for (var i = 0; i < maxClasses + 1; i++)
   {
-    blockArrays.push({})
+    blockArrays[semesterNumber].push({})
   }
 
   for (selectedCourseNum in selectedCourseCodes)
   {
-    await sortBlockArray(selectedCourseCodes[selectedCourseNum])
+    await sortBlockArray(selectedCourseCodes[selectedCourseNum], semesterNumber)
   }
 
   for (offBlockArrayNum in selectedOffBlocks)
   {
-    for (offBlockNum in selectedOffBlocks[offBlockArrayNum])
+    for (offBlockNum in selectedOffBlocks[semesterNumber][offBlockArrayNum])
     {
-      blockArrays[selectedOffBlocks[offBlockArrayNum][offBlockNum] - 1][offBlockID + (parseInt(offBlockArrayNum)).toString()] = {}
+      blockArrays[semesterNumber][selectedOffBlocks[semesterNumber][offBlockArrayNum][offBlockNum] - 1][offBlockID + (parseInt(offBlockArrayNum)).toString()] = {}
     }
   }
 
-  loadSchedules(completion)
+  loadSchedules(semesterNumber, completion)
 }
 
-function loadSchedules(completion)
+function loadSchedules(semesterNumber, completion)
 {
   schedules = []
   currentSchedule = []
   numberOfSchedulesDisplaying = 0
 
-  createSchedules()
+  createSchedules(semesterNumber)
 
-  displaySchedules(null, completion)
+  displaySchedules(null, semesterNumber, completion)
 }
 
-function sortBlockArray(selectedCourseCode)
+function sortBlockArray(selectedCourseCode, semesterNumber)
 {
   var sortBlockArrayPromise = new Promise(function(resolveBlockArray, rejectBlockArray)
   {
@@ -975,11 +983,11 @@ function sortBlockArray(selectedCourseCode)
 
           if (teacherData.length > 0)
           {
-            blockArrays[parseInt(blockNumber) - 1][selectedCourseCode] = teacherData
+            blockArrays[semesterNumber][parseInt(blockNumber) - 1][selectedCourseCode] = teacherData
           }
           else
           {
-            delete blockArrays[parseInt(blockNumber) - 1][selectedCourseCode]
+            delete blockArrays[semesterNumber][parseInt(blockNumber) - 1][selectedCourseCode]
           }
         }
       }
@@ -1018,21 +1026,21 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
   })
 }
 
-function createSchedules()
+function createSchedules(semesterNumber)
 {
-  scheduleLoopSearch(0, [])
+  scheduleLoopSearch(0, semesterNumber)
   schedules = removeUniqueOffBlocks(schedules)
   schedules = multiDimensionalUnique(schedules)
   console.log(schedules)
 }
 
-function scheduleLoopSearch(indexOn)
+function scheduleLoopSearch(indexOn, semesterNumber)
 {
-  if (blockArrays.length > indexOn)
+  if (blockArrays[semesterNumber].length > indexOn)
   {
-    for (var object in Object.keys(blockArrays[indexOn]))
+    for (var object in Object.keys(blockArrays[semesterNumber][indexOn]))
     {
-      let courseBlock = Object.keys(blockArrays[indexOn])[object]
+      let courseBlock = Object.keys(blockArrays[semesterNumber][indexOn])[object]
       /*if (courseBlock.includes(offBlockID) && !currentSchedule.includes(courseBlock))
       {
         courseBlock = courseBlock.replace(courseBlock.replace(offBlockID, ""), "")
@@ -1044,7 +1052,7 @@ function scheduleLoopSearch(indexOn)
       }
 
       currentSchedule.push(courseBlock)
-      scheduleLoopSearch(indexOn + 1)
+      scheduleLoopSearch(indexOn + 1, semesterNumber)
     }
   }
   else
@@ -1056,13 +1064,13 @@ function scheduleLoopSearch(indexOn)
       {
         if (filters[filterNum]["blockNumber"] == "any")
         {
-          if (filters[filterNum]["teacher"] != "any" && !blockArrays[currentSchedule.indexOf(filters[filterNum]["courseCode"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))
+          if (filters[filterNum]["teacher"] != "any" && !blockArrays[semesterNumber][currentSchedule.indexOf(filters[filterNum]["courseCode"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))
           {
             shouldAddSchedule = false
             break
           }
         }
-        else if (!((currentSchedule[parseInt(filters[filterNum]["blockNumber"])] == filters[filterNum]["courseCode"] || (currentSchedule[parseInt(filters[filterNum]["blockNumber"])].includes(offBlockID) && filters[filterNum]["courseCode"].includes(offBlockID))) && (filters[filterNum]["teacher"] == null || filters[filterNum]["teacher"] == "any" || blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))))
+        else if (!((currentSchedule[parseInt(filters[filterNum]["blockNumber"])] == filters[filterNum]["courseCode"] || (currentSchedule[parseInt(filters[filterNum]["blockNumber"])].includes(offBlockID) && filters[filterNum]["courseCode"].includes(offBlockID))) && (filters[filterNum]["teacher"] == null || filters[filterNum]["teacher"] == "any" || blockArrays[semesterNumber][parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))))
         {
           shouldAddSchedule = false
           break
@@ -1117,7 +1125,7 @@ function countInArray(array, what)
   return array.filter(item => item == what).length
 }
 
-async function displaySchedules(showMorePressed, completion)
+async function displaySchedules(showMorePressed, semesterNumber, completion)
 {
   if ($("#showMoreButton") != null)
   {
@@ -1177,7 +1185,7 @@ async function displaySchedules(showMorePressed, completion)
         }
         else
         {
-          let teacherArray = blockArrays[scheduleBlockNum][schedules[scheduleNum][scheduleBlockNum]]
+          let teacherArray = blockArrays[semesterNumber][scheduleBlockNum][schedules[scheduleNum][scheduleBlockNum]]
           for (teacherNum in teacherArray)
           {
             if (teacherNum != 0)
