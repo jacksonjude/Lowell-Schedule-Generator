@@ -145,8 +145,8 @@ async function loadCourseSelection()
     addToMyCourses(selectedCourseCodes[courseCodeNum])
   }
 
-  var firstSemesterCourseCount = await getCourseCount(selectedCourseCodes, firstSemesterID)
-  var secondSemesterCourseCount = await getCourseCount(selectedCourseCodes, secondSemesterID)
+  var firstSemesterCourseCount = await getCourseCount(firstSemesterID)
+  var secondSemesterCourseCount = await getCourseCount(secondSemesterID)
 
   if (firstSemesterCourseCount >= minClasses && secondSemesterCourseCount >= minClasses)
   {
@@ -307,8 +307,8 @@ async function checkedCourse(checkbox)
     }
 
     //Disable the checkboxes if the class max is reached
-    var firstSemesterCourseCount = await getCourseCount(selectedCourseCodes, firstSemesterID)
-    var secondSemesterCourseCount = await getCourseCount(selectedCourseCodes, secondSemesterID)
+    var firstSemesterCourseCount = await getCourseCount(firstSemesterID)
+    var secondSemesterCourseCount = await getCourseCount(secondSemesterID)
     if (firstSemesterCourseCount > maxClasses || secondSemesterCourseCount > maxClasses)
     {
       checkboxesDisabled = true
@@ -336,7 +336,7 @@ async function checkedCourse(checkbox)
   {
     if (selectedTeachers.length > 0)
     {
-      //Remove the array for the selectedCourse in selectedTeac
+      //Remove the array for the selectedCourse in selectedTeachers
       selectedTeachers.splice(selectedCourseCodes.indexOf($(checkbox).attr("id")), 1)
     }
 
@@ -344,8 +344,8 @@ async function checkedCourse(checkbox)
     selectedCourseCodes.splice(selectedCourseCodes.indexOf($(checkbox).attr("id")), 1)
 
     //Re-enable check boxes if the selectedCourseCodes count is maxClasses-1
-    var firstSemesterCourseCount = await getCourseCount(selectedCourseCodes, firstSemesterID)
-    var secondSemesterCourseCount = await getCourseCount(selectedCourseCodes, secondSemesterID)
+    var firstSemesterCourseCount = await getCourseCount(firstSemesterID)
+    var secondSemesterCourseCount = await getCourseCount(secondSemesterID)
     if (firstSemesterCourseCount <= maxClasses || secondSemesterCourseCount <= maxClasses)
     {
       checkboxesDisabled = false
@@ -510,6 +510,17 @@ function getCourses(courseCodeArray, completion)
 
     completion(courses)
   })
+}
+
+function getCoursesPromise(courseCodes)
+{
+  var coursesPromise = new Promise((resolve, reject) => {
+    getCourses(courseCodes, function(courseObjects) {
+      resolve(courseObjects)
+    })
+  })
+
+  return coursesPromise
 }
 
 function getTeachersForCourse(courseCode, completion)
@@ -679,6 +690,7 @@ async function loadOffBlockSelection()
   console.log(selectedTeachers)
 
   var updateSelectedOffBlocks = offBlockArraysEmpty()
+  console.log(updateSelectedOffBlocks)
 
   var firstSemesterCourseCount = await getCourseCount(firstSemesterID)
   var secondSemesterCourseCount = await getCourseCount(secondSemesterID)
@@ -686,11 +698,8 @@ async function loadOffBlockSelection()
   addOffBlockDivs(firstSemesterCourseCount, firstSemesterID, updateSelectedOffBlocks)
   addOffBlockDivs(secondSemesterCourseCount, secondSemesterID, updateSelectedOffBlocks)
 
-  //Dont know what this does...
-  // while (!updateSelectedOffBlocks && selectedOffBlocks.length != maxClasses + 1 - selectedCourseCodes.length)
-  // {
-  //   selectedOffBlocks.push([])
-  // }
+  addOffBlockArrays(updateSelectedOffBlocks, firstSemesterID-1, firstSemesterCourseCount)
+  addOffBlockArrays(updateSelectedOffBlocks, secondSemesterID-1, secondSemesterCourseCount)
 
   if (offBlockArraysEmpty())
   {
@@ -710,10 +719,18 @@ async function loadOffBlockSelection()
   $("#instructions").html("Choose any off blocks you would like to have and then click \"Next\"")
 }
 
+function addOffBlockArrays(updateSelectedOffBlocks, semesterNumber, courseCount)
+{
+  while (!updateSelectedOffBlocks && selectedOffBlocks[semesterNumber].length != maxClasses + 1 - courseCount)
+  {
+    selectedOffBlocks[semesterNumber].push([])
+  }
+}
+
 function offBlockArraysEmpty()
 {
-  for (offBlockArrayNum in selectedOffBlocks)
-    if (selectedOffBlocks[offBlockArrayNum].length > 0)
+  for (offBlockSemesterNum in selectedOffBlocks)
+    if (selectedOffBlocks[offBlockSemesterNum].length > 0)
       return false
   return true
 }
@@ -750,7 +767,6 @@ function selectOffBlock(offBlockElement)
   var selectedOffBlockID = $(offBlockElement).attr("id").replace("offBlock", "")
   var selectedOffBlockIndex = calculateRelativeOffBlockIndex(selectedOffBlockID)
   selectedOffBlockSemester = selectedOffBlockIndex[0]
-  console.log(selectedOffBlockSemester)
   selectedOffBlockNumber = selectedOffBlockIndex[1]
 
   if (itemToMoveFromTmp != selectedOffBlockID)
@@ -861,7 +877,7 @@ function reloadMyOffBlocks()
 
 function selectAllOffBlocks()
 {
-  selectedOffBlocks[parseInt(selectedOffBlockNumber) - 1] = []
+  selectedOffBlocks[parseInt(selectedOffBlockSemester)][parseInt(selectedOffBlockNumber) - 1] = []
   for (var i = 0; i < maxClasses + 1; i++)
   {
     var checkbox = $("#" + (parseInt(i) + 1).toString())
@@ -873,6 +889,11 @@ function selectAllOffBlocks()
 function getCourseCount(semester)
 {
   var courseCountPromise = new Promise((resolve, reject) => {
+    if (selectedCourseCodes.length == 0)
+    {
+      resolve(0)
+      return
+    }
     var selectedCourses = getCourses(selectedCourseCodes, function(courses) {
       var courseCount = 0
       for (courseNum in courses)
@@ -898,6 +919,8 @@ var schedules = []
 var currentSchedule = []
 var numberOfSchedulesDisplaying = 0
 
+var semesterNumberShowing = 0
+
 var showingFavorites = false
 
 async function generateSchedules(completion)
@@ -918,39 +941,44 @@ async function generateSchedules(completion)
   $("#instructions").html("Generating...")
 
   //First semester generation
-  generateSchedulesForSemester(0, completion)
+  await generateBlockArraysForSemester(0)
+  await generateBlockArraysForSemester(1)
+
+  loadSchedules(0, completion)
 }
 
-async function generateSchedulesForSemester(semesterNumber, completion)
+async function generateBlockArraysForSemester(semesterNumber)
 {
   for (var i = 0; i < maxClasses + 1; i++)
   {
     blockArrays[semesterNumber].push({})
   }
 
-  for (selectedCourseNum in selectedCourseCodes)
+  var courseObjects = await getCoursesPromise(selectedCourseCodes)
+  for (courseNum in courseObjects)
   {
-    await sortBlockArray(selectedCourseCodes[selectedCourseNum], semesterNumber)
+    if (parseInt(courseObjects[courseNum].semester) == semesterNumber+1 || courseObjects[courseNum].semester == allYearID)
+    {
+      await sortBlockArray(courseObjects[courseNum].courseCode, semesterNumber)
+    }
   }
 
-  for (offBlockArrayNum in selectedOffBlocks)
+  for (offBlockArrayNum in selectedOffBlocks[semesterNumber])
   {
     for (offBlockNum in selectedOffBlocks[semesterNumber][offBlockArrayNum])
     {
       blockArrays[semesterNumber][selectedOffBlocks[semesterNumber][offBlockArrayNum][offBlockNum] - 1][offBlockID + (parseInt(offBlockArrayNum)).toString()] = {}
     }
   }
-
-  loadSchedules(semesterNumber, completion)
 }
 
-function loadSchedules(semesterNumber, completion)
+async function loadSchedules(semesterNumber, completion)
 {
   schedules = []
   currentSchedule = []
   numberOfSchedulesDisplaying = 0
 
-  createSchedules(semesterNumber)
+  await createSchedules(semesterNumber)
 
   displaySchedules(null, semesterNumber, completion)
 }
@@ -1026,15 +1054,16 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
   })
 }
 
-function createSchedules(semesterNumber)
+async function createSchedules(semesterNumber)
 {
-  scheduleLoopSearch(0, semesterNumber)
+  scheduleLoopSearch(0, semesterNumber, false, false)
   schedules = removeUniqueOffBlocks(schedules)
   schedules = multiDimensionalUnique(schedules)
+  schedules = await removeSchedulesWithoutPossibleSecondSemesters(schedules)
   console.log(schedules)
 }
 
-function scheduleLoopSearch(indexOn, semesterNumber)
+function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters, shouldReturnAfterFirstScheduleFound)
 {
   if (blockArrays[semesterNumber].length > indexOn)
   {
@@ -1052,7 +1081,9 @@ function scheduleLoopSearch(indexOn, semesterNumber)
       }
 
       currentSchedule.push(courseBlock)
-      scheduleLoopSearch(indexOn + 1, semesterNumber)
+      var foundSchedule = scheduleLoopSearch(indexOn + 1, semesterNumber, shouldIgnoreFilters, shouldReturnAfterFirstScheduleFound)
+      if (foundSchedule && shouldReturnAfterFirstScheduleFound)
+        return
     }
   }
   else
@@ -1078,7 +1109,7 @@ function scheduleLoopSearch(indexOn, semesterNumber)
       }
     }
 
-    if (shouldAddSchedule)
+    if (shouldIgnoreFilters || shouldAddSchedule)
     {
       schedules.push(currentSchedule)
     }
@@ -1086,6 +1117,11 @@ function scheduleLoopSearch(indexOn, semesterNumber)
   }
 
   currentSchedule.pop()
+
+  if (schedules.length > 0)
+    return true
+  else
+    return false
 }
 
 function multiDimensionalUnique(arr)
@@ -1124,6 +1160,75 @@ function countInArray(array, what)
 {
   return array.filter(item => item == what).length
 }
+
+async function removeSchedulesWithoutPossibleSecondSemesters(schedulesFound)
+{
+  var firstSemesterSchedules = schedulesFound.concat()
+  var courseObjects = await getCoursesPromise(selectedCourseCodes)
+
+  schedules = []
+  currentSchedule = []
+
+  scheduleLoopSearch(0, secondSemesterID-1, true, false)
+
+  console.log(firstSemesterSchedules)
+  console.log(schedules)
+
+  for (i=firstSemesterSchedules.length-1; i >= 0; i--)
+  {
+    var allYearCoursesBlockNum = []
+    for (j=0; j < firstSemesterSchedules[i].length; j++)
+    {
+      allYearCoursesBlockNum.push(null)
+    }
+
+    for (courseCodeNum in firstSemesterSchedules[i])
+    {
+      if (firstSemesterSchedules[i][courseCodeNum].includes(offBlockID))
+        continue
+
+      var semesterOfCourse = allYearID
+      for (courseNum in courseObjects)
+      {
+        if (courseObjects[courseNum].courseCode == firstSemesterSchedules[i][courseCodeNum])
+        {
+          semesterOfCourse = courseObjects[courseNum].semester
+          break
+        }
+      }
+
+      if (semesterOfCourse == allYearID)
+        allYearCoursesBlockNum[courseCodeNum] = firstSemesterSchedules[i][courseCodeNum]
+    }
+
+    var scheduleMatchFound = false
+    for (scheduleNum in schedules)
+    {
+      var scheduleDidNotMatch = false
+      for (courseCodeNum in schedules[scheduleNum])
+      {
+        if (allYearCoursesBlockNum[courseCodeNum] != null && allYearCoursesBlockNum[courseCodeNum] != schedules[scheduleNum][courseCodeNum])
+        {
+          scheduleDidNotMatch = true
+          break
+        }
+      }
+
+      if (!scheduleDidNotMatch)
+      {
+        scheduleMatchFound = true
+        break
+      }
+    }
+
+    if (!scheduleMatchFound)
+      firstSemesterSchedules.splice(i, 1)
+  }
+
+  return firstSemesterSchedules
+}
+
+//Display Schedules
 
 async function displaySchedules(showMorePressed, semesterNumber, completion)
 {
@@ -1402,7 +1507,7 @@ function toggleFavoriteSchedule(inputElement)
 function toggleFavoriteFilter()
 {
   showingFavorites = !showingFavorites
-  showingFavorites ? (schedules = Object.values(favoriteSchedules), numberOfSchedulesDisplaying = 0, displaySchedules()) : (loadSchedules())
+  showingFavorites ? (schedules = Object.values(favoriteSchedules), numberOfSchedulesDisplaying = 0, displaySchedules()) : (loadSchedules(semesterNumberShowing))
 }
 
 function reloadThenShowFavorites()
@@ -1512,7 +1617,7 @@ function addFilterSelectHTML(filterNum)
 
       if (shouldReload)
       {
-        loadSchedules()
+        loadSchedules(semesterNumberShowing)
       }
     }
   })
@@ -1551,7 +1656,7 @@ function addFilterSelectHTML(filterNum)
 
       if (shouldReload)
       {
-        loadSchedules()
+        loadSchedules(semesterNumberShowing)
       }
     }
   })
@@ -1577,7 +1682,7 @@ function addFilterSelectHTML(filterNum)
 
     if (filterTeacherChanged)
     {
-      loadSchedules()
+      loadSchedules(semesterNumberShowing)
     }
   })
   filterRow.append(teacherFilterSelect)
@@ -1706,7 +1811,7 @@ function removeFilter()
   if (shouldReload)
   {
     justRemovedFilter = true
-    loadSchedules()
+    loadSchedules(semesterNumberShowing)
   }
   else if (filters.length == 0)
   {
