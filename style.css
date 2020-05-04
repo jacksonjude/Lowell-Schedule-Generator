@@ -85,7 +85,7 @@
   vertical-align: top;
 }
 
-.favoriteButton {
+.favoriteButton, .secondSemesterExpandButton {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -93,7 +93,36 @@
   outline: none;
   max-width: 30px;
   max-height: 30px;
-  background: url('assets/favoriteIcon.png');
+}
+
+.favoriteButton {
+  right: 50px;
+}
+
+@-webkit-keyframes rotate-clockwise {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(90deg); }
+}
+
+@-webkit-keyframes rotate-counterclockwise {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(-90deg); }
+}
+
+.animation-rotate-clockwise {
+  -webkit-animation-name: rotate-clockwise;
+  -webkit-animation-duration: 0.25s;
+  -webkit-transition-timing-function: linear;
+}
+
+.animation-rotate-counterclockwise {
+  -webkit-animation-name: rotate-counterclockwise;
+  -webkit-animation-duration: 0.25s;
+  -webkit-transition-timing-function: linear;
+}
+
+.secondSemesterSchedules {
+  margin-left: 80px;
 }
 
 .selectedAnimationBox {

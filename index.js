@@ -914,6 +914,7 @@ const scheduleDisplayCount = 10
 var blockArrays = [[], []]
 var filters = []
 var favoriteSchedules = {}
+var expandedSchedules = {}
 
 var schedules = []
 var currentSchedule = []
@@ -980,7 +981,7 @@ async function loadSchedules(semesterNumber, completion)
 
   await createSchedules(semesterNumber)
 
-  displaySchedules(null, semesterNumber, completion)
+  displaySchedules(null, completion)
 }
 
 function sortBlockArray(selectedCourseCode, semesterNumber)
@@ -1056,14 +1057,14 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
 
 async function createSchedules(semesterNumber)
 {
-  scheduleLoopSearch(0, semesterNumber, false, false)
+  scheduleLoopSearch(0, semesterNumber, false)
   schedules = removeUniqueOffBlocks(schedules)
   schedules = multiDimensionalUnique(schedules)
   schedules = await removeSchedulesWithoutPossibleSecondSemesters(schedules)
   console.log(schedules)
 }
 
-function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters, shouldReturnAfterFirstScheduleFound)
+function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters)
 {
   if (blockArrays[semesterNumber].length > indexOn)
   {
@@ -1081,9 +1082,7 @@ function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters, should
       }
 
       currentSchedule.push(courseBlock)
-      var foundSchedule = scheduleLoopSearch(indexOn + 1, semesterNumber, shouldIgnoreFilters, shouldReturnAfterFirstScheduleFound)
-      if (foundSchedule && shouldReturnAfterFirstScheduleFound)
-        return
+      scheduleLoopSearch(indexOn + 1, semesterNumber, shouldIgnoreFilters)
     }
   }
   else
@@ -1117,11 +1116,6 @@ function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters, should
   }
 
   currentSchedule.pop()
-
-  if (schedules.length > 0)
-    return true
-  else
-    return false
 }
 
 function multiDimensionalUnique(arr)
@@ -1169,68 +1163,72 @@ async function removeSchedulesWithoutPossibleSecondSemesters(schedulesFound)
   schedules = []
   currentSchedule = []
 
-  scheduleLoopSearch(0, secondSemesterID-1, true, false)
-
-  console.log(firstSemesterSchedules)
-  console.log(schedules)
+  scheduleLoopSearch(0, secondSemesterID-1, true)
 
   for (i=firstSemesterSchedules.length-1; i >= 0; i--)
   {
-    var allYearCoursesBlockNum = []
-    for (j=0; j < firstSemesterSchedules[i].length; j++)
-    {
-      allYearCoursesBlockNum.push(null)
-    }
-
-    for (courseCodeNum in firstSemesterSchedules[i])
-    {
-      if (firstSemesterSchedules[i][courseCodeNum].includes(offBlockID))
-        continue
-
-      var semesterOfCourse = allYearID
-      for (courseNum in courseObjects)
-      {
-        if (courseObjects[courseNum].courseCode == firstSemesterSchedules[i][courseCodeNum])
-        {
-          semesterOfCourse = courseObjects[courseNum].semester
-          break
-        }
-      }
-
-      if (semesterOfCourse == allYearID)
-        allYearCoursesBlockNum[courseCodeNum] = firstSemesterSchedules[i][courseCodeNum]
-    }
-
-    var scheduleMatchFound = false
-    for (scheduleNum in schedules)
-    {
-      var scheduleDidNotMatch = false
-      for (courseCodeNum in schedules[scheduleNum])
-      {
-        if (allYearCoursesBlockNum[courseCodeNum] != null && allYearCoursesBlockNum[courseCodeNum] != schedules[scheduleNum][courseCodeNum])
-        {
-          scheduleDidNotMatch = true
-          break
-        }
-      }
-
-      if (!scheduleDidNotMatch)
-      {
-        scheduleMatchFound = true
-        break
-      }
-    }
-
-    if (!scheduleMatchFound)
+    if (findSecondSemesterSchedules(firstSemesterSchedules[i], courseObjects).length == 0)
       firstSemesterSchedules.splice(i, 1)
   }
 
   return firstSemesterSchedules
 }
 
-//Display Schedules
+function findSecondSemesterSchedules(firstSemesterSchedule, courseObjects)
+{
+  var allYearCoursesBlockNum = []
+  for (j=0; j < firstSemesterSchedule.length; j++)
+  {
+    allYearCoursesBlockNum.push(null)
+  }
 
-async function displaySchedules(showMorePressed, semesterNumber, completion)
+  for (courseCodeNum in firstSemesterSchedule)
+  {
+    if (firstSemesterSchedule[courseCodeNum].includes(offBlockID))
+      continue
+
+    var semesterOfCourse = allYearID
+    for (courseNum in courseObjects)
+    {
+      if (courseObjects[courseNum].courseCode == firstSemesterSchedule[courseCodeNum])
+      {
+        semesterOfCourse = courseObjects[courseNum].semester
+        break
+      }
+    }
+
+    if (semesterOfCourse == allYearID)
+      allYearCoursesBlockNum[courseCodeNum] = firstSemesterSchedule[courseCodeNum]
+  }
+
+  var scheduleMatches = []
+  for (scheduleNum in schedules)
+  {
+    var scheduleDidNotMatch = false
+    for (courseCodeNum in schedules[scheduleNum])
+    {
+      if (allYearCoursesBlockNum[courseCodeNum] != null && allYearCoursesBlockNum[courseCodeNum] != schedules[scheduleNum][courseCodeNum])
+      {
+        scheduleDidNotMatch = true
+        break
+      }
+    }
+
+    if (!scheduleDidNotMatch)
+    {
+      scheduleMatches.push(schedules[scheduleNum])
+    }
+  }
+
+  return scheduleMatches
+}
+
+//MARK: - Display Schedules
+
+var favoriteIDPrefix = "FAV"
+var expandIDPrefix = "EXP"
+
+async function displaySchedules(showMorePressed, completion)
 {
   if ($("#showMoreButton") != null)
   {
@@ -1250,72 +1248,8 @@ async function displaySchedules(showMorePressed, semesterNumber, completion)
       continue
     }
 
-    var scheduleHTML = "<div class='scheduleContainer'><div class='schedule' id='schedule" + (parseInt(scheduleNum) + 1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum) + 1).toString() + "</h3><h4>"
-    let thisScheduleInnerHTML = ""
-    for (scheduleBlockNum in schedules[scheduleNum])
-    {
-      if (schedules[scheduleNum][scheduleBlockNum].includes(offBlockID))
-      {
-        thisScheduleInnerHTML += "Block " + (parseInt(scheduleBlockNum) + 1).toString() + ": Off Block<br>"
-      }
-      else
-      {
-        thisScheduleInnerHTML += "Block " + (parseInt(scheduleBlockNum) + 1).toString() + ": "
-
-        await getCourseName(schedules[scheduleNum][scheduleBlockNum], function(courseName)
-        {
-          thisScheduleInnerHTML += courseName + " - "
-        })
-
-        let filtersForBlock = []
-        for (filterNum in filters)
-        {
-          if ((filters[filterNum]["blockNumber"] == scheduleBlockNum && filters[filterNum]["teacher"] != undefined) || (filters[filterNum]["blockNumber"] == "any" && filters[filterNum]["courseCode"] == schedules[scheduleNum][scheduleBlockNum]))
-          {
-            filtersForBlock = filters[filterNum]
-            //break
-          }
-        }
-
-        if (filtersForBlock.length > 0 && filterForBlock["teacher"] != "any")
-        {
-          for (filterNum in filtersForBlock)
-          {
-            if (filterNum != 0)
-            {
-              thisScheduleInnerHTML += " or "
-            }
-            thisScheduleInnerHTML += filtersForBlock[filterNum]["teacher"]
-          }
-        }
-        else
-        {
-          let teacherArray = blockArrays[semesterNumber][scheduleBlockNum][schedules[scheduleNum][scheduleBlockNum]]
-          for (teacherNum in teacherArray)
-          {
-            if (teacherNum != 0)
-            {
-              thisScheduleInnerHTML += " or "
-            }
-            thisScheduleInnerHTML += teacherArray[teacherNum]
-          }
-        }
-
-        thisScheduleInnerHTML += "<br>"
-      }
-    }
-
-    scheduleHTML += thisScheduleInnerHTML + "</h4>"
-
-    let imageURL = "assets/"
-
-    let favoriteScheduleID = SHA256(JSON.stringify(schedules[scheduleNum]))
-    imageURL += (Object.keys(favoriteSchedules).includes(favoriteScheduleID)) ? "favoriteIconPressed.png" : "favoriteIcon.png"
-
-    scheduleHTML += "<input id='" + favoriteScheduleID + "' onclick='toggleFavoriteSchedule(this)' type='image' src='" + imageURL + "' class='favoriteButton' />"
-    scheduleHTML += "</div>"
-    scheduleHTML += "</div><br><br>"
-    $("#selection").append(scheduleHTML)
+    var scheduleHTML = await createScheduleDivHTML(schedules, scheduleNum, false, true)
+    $("#selection").append("<div id='fullSchedule" + (parseInt(scheduleNum) + 1).toString() + "'>" + scheduleHTML + "</div><br><br>")
 
     numberOfSchedulesDisplaying += 1
     $("#instructions").html("Generating... (" + numberOfSchedulesDisplaying + "/" + schedules.length + ")")
@@ -1330,9 +1264,89 @@ async function displaySchedules(showMorePressed, semesterNumber, completion)
   $("#instructions").html("Done! (Showing " + numberOfSchedulesDisplaying + "/" + schedules.length + ")")
   $("#instructions").append(" " + (!showingFavorites ? " <button onclick='loadCourseSelection()'>Edit</button>" : "") + " <button onclick='reloadPage()'>Clear</button>" + " <button onclick='toggleFavoriteFilter()'>" + (showingFavorites ? "Hide Favorites" : "Show Favorites") + "</button>")
 
-    !showingFavorites ? setupFilterMenu() : false
+  !showingFavorites ? setupFilterMenu() : false
 
   completion ? completion() : false
+}
+
+async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters, shouldAddButtons)
+{
+  var scheduleHTML = "<div class='scheduleContainer'><div class='schedule' id='schedule" + (parseInt(scheduleNum) + 1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum) + 1).toString() + "</h3><h4>"
+  let thisScheduleInnerHTML = ""
+  for (scheduleBlockNum in schedules[scheduleNum])
+  {
+    if (schedules[scheduleNum][scheduleBlockNum].includes(offBlockID))
+    {
+      thisScheduleInnerHTML += "Block " + (parseInt(scheduleBlockNum) + 1).toString() + ": Off Block<br>"
+    }
+    else
+    {
+      thisScheduleInnerHTML += "Block " + (parseInt(scheduleBlockNum) + 1).toString() + ": "
+
+      await getCourseName(schedules[scheduleNum][scheduleBlockNum], function(courseName)
+      {
+        thisScheduleInnerHTML += courseName + " - "
+      })
+
+      let filtersForBlock = []
+      if (!shouldIgnoreFilters)
+      {
+        for (filterNum in filters)
+        {
+          if ((filters[filterNum]["blockNumber"] == scheduleBlockNum && filters[filterNum]["teacher"] != undefined) || (filters[filterNum]["blockNumber"] == "any" && filters[filterNum]["courseCode"] == schedules[scheduleNum][scheduleBlockNum]))
+          {
+            filtersForBlock = filters[filterNum]
+            //break
+          }
+        }
+      }
+
+      if (filtersForBlock.length > 0 && filterForBlock["teacher"] != "any")
+      {
+        for (filterNum in filtersForBlock)
+        {
+          if (filterNum != 0)
+          {
+            thisScheduleInnerHTML += " or "
+          }
+          thisScheduleInnerHTML += filtersForBlock[filterNum]["teacher"]
+        }
+      }
+      else
+      {
+        let teacherArray = blockArrays[semesterNumberShowing][scheduleBlockNum][schedules[scheduleNum][scheduleBlockNum]]
+        for (teacherNum in teacherArray)
+        {
+          if (teacherNum != 0)
+          {
+            thisScheduleInnerHTML += " or "
+          }
+          thisScheduleInnerHTML += teacherArray[teacherNum]
+        }
+      }
+
+      thisScheduleInnerHTML += "<br>"
+    }
+  }
+
+  scheduleHTML += thisScheduleInnerHTML + "</h4>"
+
+  var imageFolder = "assets/"
+  let scheduleID = SHA256(JSON.stringify(schedules[scheduleNum]))
+
+  if (shouldAddButtons)
+  {
+    var favoriteImageURL = imageFolder + ((Object.keys(favoriteSchedules).includes(scheduleID)) ? "favoriteIconPressed.png" : "favoriteIcon.png")
+    scheduleHTML += "<input id='" + favoriteIDPrefix + "-" + scheduleID + "' onclick='toggleFavoriteSchedule(this)' type='image' src='" + favoriteImageURL + "' class='favoriteButton' />"
+
+    var expandImageURL = imageFolder + ((Object.keys(expandedSchedules).includes(scheduleID)) ? "expandIconEnabled.png" : "expandIcon.png")
+    scheduleHTML += "<input id='" + expandIDPrefix + "-" + scheduleID + "' onclick='toggleSecondSemesterDisplay(this)' type='image' src='" + expandImageURL + "' class='secondSemesterExpandButton' />"
+  }
+
+  scheduleHTML += "</div>"
+  scheduleHTML += "</div>"
+
+  return scheduleHTML
 }
 
 var arenaData = []
@@ -1499,9 +1513,9 @@ function reloadPage()
 
 function toggleFavoriteSchedule(inputElement)
 {
-  Object.keys(favoriteSchedules).includes($(inputElement).attr("id")) ? delete favoriteSchedules[$(inputElement).attr("id")] : favoriteSchedules[$(inputElement).attr("id")] = schedules[parseInt($(inputElement).parent().attr("id").replace("schedule", "")) - 1]
+  Object.keys(favoriteSchedules).includes($(inputElement).attr("id").replace(favoriteIDPrefix + "-", "")) ? delete favoriteSchedules[$(inputElement).attr("id").replace(favoriteIDPrefix + "-", "")] : favoriteSchedules[$(inputElement).attr("id").replace(favoriteIDPrefix + "-", "")] = schedules[parseInt($(inputElement).parent().attr("id").replace("schedule", "")) - 1]
 
-  $(inputElement).attr("src", "assets/" + (Object.keys(favoriteSchedules).includes($(inputElement).attr("id")) ? "favoriteIconPressed" : "favoriteIcon") + ".png")
+  $(inputElement).attr("src", "assets/" + (Object.keys(favoriteSchedules).includes($(inputElement).attr("id").replace(favoriteIDPrefix + "-", "")) ? "favoriteIconPressed" : "favoriteIcon") + ".png")
 }
 
 function toggleFavoriteFilter()
@@ -1519,6 +1533,82 @@ function reloadThenShowFavorites()
     numberOfSchedulesDisplaying = 0
     displaySchedules()
   })
+}
+
+function toggleSecondSemesterDisplay(inputElement)
+{
+  var scheduleDivID = $(inputElement).parent().attr("id")
+  Object.keys(expandedSchedules).includes($(inputElement).attr("id").replace(expandIDPrefix + "-", "")) ? delete expandedSchedules[$(inputElement).attr("id").replace(expandIDPrefix + "-", "")] : expandedSchedules[$(inputElement).attr("id").replace(expandIDPrefix + "-", "")] = schedules[parseInt(scheduleDivID.replace("schedule", "")) - 1]
+
+  var scheduleIsExpanded = Object.keys(expandedSchedules).includes($(inputElement).attr("id").replace(expandIDPrefix + "-", ""))
+
+  var fullScheduleDivID = "fullSchedule" + scheduleDivID.replace("schedule", "")
+  if (scheduleIsExpanded)
+  {
+    animateExpand(inputElement)
+    createSecondSemesterScheduleDivs(fullScheduleDivID)
+  }
+  else
+  {
+    animateCollapse(inputElement)
+    removeSecondSemesterScheduleDivs(fullScheduleDivID)
+  }
+}
+
+function animateExpand(inputElement)
+{
+  $(inputElement).addClass("animation-rotate-clockwise")
+  setTimeout(function() {
+    $(inputElement).removeClass("animation-rotate-clockwise")
+    $(inputElement).attr("src", "assets/expandIconEnabled.png")
+  }, 200)
+}
+
+function animateCollapse(inputElement)
+{
+  $(inputElement).addClass("animation-rotate-counterclockwise")
+  setTimeout(function() {
+    $(inputElement).removeClass("animation-rotate-counterclockwise")
+    $(inputElement).attr("src", "assets/expandIcon.png")
+  }, 200)
+}
+
+async function createSecondSemesterScheduleDivs(fullScheduleDivID)
+{
+  var firstSemesterSchedules = schedules.concat()
+  var scheduleID = parseInt(fullScheduleDivID.replace("fullSchedule", ""))
+  var scheduleToMatch = firstSemesterSchedules[scheduleID-1]
+
+  var courseObjects = await getCoursesPromise(selectedCourseCodes)
+
+  schedules = []
+  currentSchedule = []
+
+  scheduleLoopSearch(0, secondSemesterID-1, true)
+
+  semesterNumberShowing = 1
+
+  var secondSemesterSchedules = findSecondSemesterSchedules(scheduleToMatch, courseObjects)
+
+  var secondSemesterHTML = "<div class='secondSemesterSchedules' id='secondSemesterSchedules" + scheduleID + "'><br><br>"
+  for (scheduleNum in secondSemesterSchedules)
+  {
+    var scheduleHTML = await createScheduleDivHTML(secondSemesterSchedules, scheduleNum, true, false)
+    secondSemesterHTML += scheduleHTML + "<br><br>"
+  }
+  secondSemesterHTML += "</div>"
+
+  $("#" + fullScheduleDivID).append(secondSemesterHTML)
+
+  semesterNumberShowing = 0
+
+  schedules = firstSemesterSchedules
+}
+
+function removeSecondSemesterScheduleDivs(fullScheduleDivID)
+{
+  var scheduleID = parseInt(fullScheduleDivID.replace("fullSchedule", ""))
+  $("#secondSemesterSchedules" + scheduleID).remove()
 }
 
 //MARK: - Filters
@@ -1649,7 +1739,7 @@ function addFilterSelectHTML(filterNum)
 
       var shouldReload = (filters[filterNumber]["teacher"] != undefined)
 
-      if (blockSelected == "none" || blockSelected == "any" || !(filters[filterNumber]["teacher"] == "any" || (filters[filterNumber]["courseCode"] != undefined && filters[filterNumber]["blockNumber"] != undefined && Object.keys(blockArrays[parseInt(filters[filterNumber]["blockNumber"])]).includes(filters[filterNumber]["courseCode"]) && blockArrays[parseInt(filters[filterNumber]["blockNumber"])][filters[filterNumber]["courseCode"]].includes(filters[filterNumber]["teacher"]))))
+      if (blockSelected == "none" || blockSelected == "any" || !(filters[filterNumber]["teacher"] == "any" || (filters[filterNumber]["courseCode"] != undefined && filters[filterNumber]["blockNumber"] != undefined && Object.keys(blockArrays[semesterNumberShowing][parseInt(filters[filterNumber]["blockNumber"])]).includes(filters[filterNumber]["courseCode"]) && blockArrays[semesterNumberShowing][parseInt(filters[filterNumber]["blockNumber"])][filters[filterNumber]["courseCode"]].includes(filters[filterNumber]["teacher"]))))
       {
         delete filters[filterNumber]["teacher"]
       }
@@ -1697,7 +1787,7 @@ function addFilterBlockSelectionOptions(blockFilterSelect, filterNum)
   {
     for (var blockNum = 0; blockNum < maxClasses + 1; blockNum++)
     {
-      if (filters[filterNum]["courseCode"] != null && Object.keys(blockArrays[blockNum]).includes(filters[filterNum]["courseCode"]))
+      if (filters[filterNum]["courseCode"] != null && Object.keys(blockArrays[semesterNumberShowing][blockNum]).includes(filters[filterNum]["courseCode"]))
       {
         let blockName = "Block " + (parseInt(blockNum + 1)).toString()
         blockFilterSelect.append($('<option>',
@@ -1713,7 +1803,7 @@ function addFilterBlockSelectionOptions(blockFilterSelect, filterNum)
     let offBlockRegex = RegExp(offBlockID + "\\d+")
     for (var blockNum = 0; blockNum < maxClasses + 1; blockNum++)
     {
-      if (Object.keys(blockArrays[blockNum]).some(courseToTest => offBlockRegex.test(courseToTest)))
+      if (Object.keys(blockArrays[semesterNumberShowing][blockNum]).some(courseToTest => offBlockRegex.test(courseToTest)))
       {
         let blockName = "Block " + (parseInt(blockNum + 1)).toString()
         blockFilterSelect.append($('<option>',
@@ -1731,7 +1821,7 @@ function addFilterTeacherSelectionOptions(teacherFilterSelect, filterNum)
   var teachersToSelect
   if (filters[filterNum]["blockNumber"] != null && filters[filterNum]["blockNumber"] != "any")
   {
-    teachersToSelect = (filters[filterNum]["courseCode"] != null && !filters[filterNum]["courseCode"].includes(offBlockID) && filters[filterNum]["blockNumber"] != null) ? blockArrays[parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]] : []
+    teachersToSelect = (filters[filterNum]["courseCode"] != null && !filters[filterNum]["courseCode"].includes(offBlockID) && filters[filterNum]["blockNumber"] != null) ? blockArrays[semesterNumberShowing][parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]] : []
   }
   else if (filters[filterNum]["courseCode"] != null && !filters[filterNum]["courseCode"].includes(offBlockID))
   {
