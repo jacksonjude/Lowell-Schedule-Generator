@@ -125,6 +125,19 @@
   margin-left: 80px;
 }
 
+.filterSelect {
+  max-width: 250px;
+}
+
+.sessionBox {
+  position: absolute;
+  top: 20;
+  right: 20;
+  vertical-align: top;
+  color: white;
+  zoom: 120%;
+}
+
 .selectedAnimationBox {
   position: absolute;
   top: 0;
@@ -187,4 +200,13 @@
 .scrollerText {
   margin-top: 15px;
   margin-bottom: 15px;
+}
+
+@font-face {
+  font-family: 'BreeSerif';
+  src: url('https://jacksonjude.com/assets/Bree5erif-Regular.ttf');
+}
+
+html {
+  font-family: 'BreeSerif';
 }

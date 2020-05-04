@@ -19,7 +19,7 @@
       <h2 id="instructions" style="padding-left: 10px; padding-top: 5px; padding-bottom: 5px; padding-right: 10px; border:1px solid white; background-color: #444444; color: white; border-radius: 5px;"></h2>
     </div>
     <div class="loader" id="loader"></div>
-    <span id="sessionBox" style="position: absolute; top: 20; right: 20; vertical-align: top; color: white;"><input id="sessionID" placeholder="Session ID" autocomplete="off"><br><button id="saveButton" onclick="saveSession($('#sessionID').val())">Save</button><button
+    <span id="sessionBox" class="sessionBox"><input id="sessionID" placeholder="Session ID" autocomplete="off"><br><button id="saveButton" onclick="saveSession($('#sessionID').val())">Save</button><button
         id="loadButton" onclick="loadSession($('#sessionID').val(), function() {loadCourseSelection()})">Load</button><button id="favoriteButton" onclick="loadSession($('#sessionID').val(), function() {reloadThenShowFavorites()})">Fav</button><br><button id="shareButton" onclick="shareSession($('#sessionID').val())">Get Share Link</button><br><input type='text' id='sessionShare' onclick='copySession()'></span>
     <br>
     <div id="selection"></div>

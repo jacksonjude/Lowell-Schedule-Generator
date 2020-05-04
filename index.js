@@ -25,6 +25,7 @@ var selectedOffBlocks = [[], []]
 var checkboxesDisabled = false
 var checkboxes = []
 
+var courseObjects = {}
 var courseNames = {}
 var currentSeatCounts = {}
 
@@ -480,36 +481,63 @@ function setupTeacherSelectionElements()
 
 function getCourses(courseCodeArray, completion)
 {
-  //Get courses from courseCodes
-  var whereSQL = ""
+  var courseObjectsLoaded = true
   for (courseCodeNum in courseCodeArray)
   {
-    if (courseCodeNum != 0)
+    if (courseObjects[courseCodeArray[courseCodeNum]] == null)
     {
-      whereSQL += " or "
+      courseObjectsLoaded = false
+      break
     }
-    whereSQL += "courseCode=\'" + courseCodeArray[courseCodeNum] + "\'"
   }
 
-  getJSON(dataSource,
+  if (!courseObjectsLoaded)
   {
-    "table": "courses",
-    "where": whereSQL/*,
-    "order": "departmentNumber,courseName asc"*/
-  }, function(data)
-  {
-    var courses = []
-
-    for (courseNum in data)
+    //Get courses from courseCodes
+    var whereSQL = ""
+    for (courseCodeNum in courseCodeArray)
     {
-      //Create course objects
-      var courseArray = data[courseNum]
-      var course = new SchoolCourse(courseArray)
-      courses.push(course)
+      if (courseCodeNum != 0)
+      {
+        whereSQL += " or "
+      }
+      whereSQL += "courseCode=\'" + courseCodeArray[courseCodeNum] + "\'"
     }
 
-    completion(courses)
-  })
+    getJSON(dataSource,
+    {
+      "table": "courses",
+      "where": whereSQL/*,
+      "order": "departmentNumber,courseName asc"*/
+    }, function(data)
+    {
+      var courses = []
+
+      for (courseNum in data)
+      {
+        //Create course objects
+        var courseArray = data[courseNum]
+        var course = new SchoolCourse(courseArray)
+        courses.push(course)
+        courseObjects[course.courseCode] = course
+      }
+
+      completion(courses)
+    })
+  }
+  else
+  {
+    var courseObjectsToReturn = []
+    for (courseCodeNum in Object.keys(courseObjects))
+    {
+      var courseCode = Object.keys(courseObjects)[courseCodeNum]
+      if (courseCodeArray.includes(courseCode))
+      {
+        courseObjectsToReturn.push(courseObjects[courseCode])
+      }
+    }
+    completion(courseObjectsToReturn)
+  }
 }
 
 function getCoursesPromise(courseCodes)
@@ -1225,8 +1253,10 @@ function findSecondSemesterSchedules(firstSemesterSchedule, courseObjects)
 
 //MARK: - Display Schedules
 
-var favoriteIDPrefix = "FAV"
-var expandIDPrefix = "EXP"
+const favoriteIDPrefix = "FAV"
+const expandIDPrefix = "EXP"
+
+const semesterColors = ["#ffffff", "#FFF856", "#5AFFF4"]
 
 async function displaySchedules(showMorePressed, completion)
 {
@@ -1271,6 +1301,13 @@ async function displaySchedules(showMorePressed, completion)
 
 async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters, shouldAddButtons)
 {
+  var courseObjects = await getCoursesPromise(selectedCourseCodes)
+  var courseDictionary = {}
+  for (courseNum in courseObjects)
+  {
+    courseDictionary[courseObjects[courseNum].courseCode] = courseObjects[courseNum]
+  }
+
   var scheduleHTML = "<div class='scheduleContainer'><div class='schedule' id='schedule" + (parseInt(scheduleNum) + 1).toString() + "'><h3>Schedule " + (parseInt(scheduleNum) + 1).toString() + "</h3><h4>"
   let thisScheduleInnerHTML = ""
   for (scheduleBlockNum in schedules[scheduleNum])
@@ -1281,12 +1318,17 @@ async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters
     }
     else
     {
-      thisScheduleInnerHTML += "Block " + (parseInt(scheduleBlockNum) + 1).toString() + ": "
+      let courseObject = courseDictionary[schedules[scheduleNum][scheduleBlockNum]]
+      let courseColor = semesterColors[courseObject.semester]
 
-      await getCourseName(schedules[scheduleNum][scheduleBlockNum], function(courseName)
-      {
-        thisScheduleInnerHTML += courseName + " - "
-      })
+      thisScheduleInnerHTML += "<span style='color:" + courseColor + "'>Block " + (parseInt(scheduleBlockNum) + 1).toString() + ": "
+
+      thisScheduleInnerHTML += courseObject.courseName + " - "
+
+      // await getCourseName(schedules[scheduleNum][scheduleBlockNum], function(courseName)
+      // {
+      //   thisScheduleInnerHTML += courseName + " - "
+      // })
 
       let filtersForBlock = []
       if (!shouldIgnoreFilters)
@@ -1325,7 +1367,7 @@ async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters
         }
       }
 
-      thisScheduleInnerHTML += "<br>"
+      thisScheduleInnerHTML += "</span><br>"
     }
   }
 
@@ -1657,20 +1699,20 @@ function addFilterSelectHTML(filterNum)
   var filterSelection = $(".filterSelection")
   var filterRow = $("<span id=filterRow" + filterNum + ">")
 
-  let courseFilterSelect = $("<select id='filterCourse" + filterNum.toString() + "'>")
+  let courseFilterSelect = $("<select class='filterSelect' id='filterCourse" + filterNum.toString() + "'>")
   courseFilterSelect.append($('<option>',
   {
     value: "none",
     text: "None"
   }))
-  $.each(courseNames, function(code, name)
+  for (courseNum in courseObjects)
   {
     courseFilterSelect.append($('<option>',
     {
-      value: code,
-      text: name
+      value: courseObjects[courseNum].courseCode,
+      text: courseObjects[courseNum].courseName
     }))
-  })
+  }
   courseFilterSelect.append($('<option>',
   {
     value: offBlockID,
