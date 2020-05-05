@@ -1,4 +1,4 @@
-const rootHost = "http://localhost:5000" //FIXX
+const rootHost = "https://scheduledata.herokuapp.com"
 const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
 const arenaSource = rootHost + "/arena/"
