@@ -411,6 +411,7 @@ function loadTeacherSelection()
   getCourses(selectedCourseCodes, function(courses)
   {
     var selectedCourseCodesTmp = []
+    var selectedTeachersTmp = []
 
     courses.sort(function(a, b) {
       return selectedCourseCodes.indexOf(a.courseCode) > selectedCourseCodes.indexOf(b.courseCode)
@@ -428,10 +429,19 @@ function loadTeacherSelection()
       {
         selectedTeachers.push([])
       }
+      else
+      {
+        selectedTeachersTmp.push(selectedTeachers[selectedCourseCodes.indexOf(courses[courseNum].courseCode)])
+      }
     }
 
     selectedCourseCodes = selectedCourseCodesTmp
     console.log(selectedCourseCodes)
+
+    if (!updateSelectedTeachers)
+    {
+      selectedTeachers = selectedTeachersTmp
+    }
 
     //Select first object
     selectedCourse = selectedCourseCodes[0]
