@@ -235,6 +235,6 @@ a:active, a:focus, a:hover {
 }
 
 .ratingStars {
-  display: none;
+  display: inline;
   padding-left: 10px;
 }

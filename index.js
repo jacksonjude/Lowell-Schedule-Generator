@@ -398,7 +398,7 @@ function removeFromMyCourses(courseCode)
 //MARK: - Teacher Selection
 
 var teachersRatingData = {}
-var shouldAlwaysShowTeacherRating = false
+var shouldAlwaysShowTeacherRating = true
 
 function loadTeacherSelection()
 {
