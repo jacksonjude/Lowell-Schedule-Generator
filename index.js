@@ -620,10 +620,18 @@ function selectCourse(courseElement)
       teacherInput.prop("checked", (selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].includes(teacherArray[teacher])))
       teacherSelection.append(teacherInput)
 
+      var teacherNameHTML
       var teacherRatingData = await getTeacherRatings(teacherArray[teacher], selectedCourse)
-      var teacherNameHTML = " <a onmouseover='showTeacherRating(this)' onmouseout='hideTeacherRating(this)' target='_blank' href='" + teacherRatingData["url"] + "'>" + teacherArray[teacher]
-      teacherNameHTML += createTeacherRatingDiv(teacherRatingData["rating"])
-      teacherNameHTML += "</a><br>"
+      if (teacherRatingData)
+      {
+        teacherNameHTML = " <a onmouseover='showTeacherRating(this)' onmouseout='hideTeacherRating(this)' target='_blank' href='" + teacherRatingData["url"] + "'>" + teacherArray[teacher]
+        teacherNameHTML += createTeacherRatingDiv(teacherRatingData["rating"])
+        teacherNameHTML += "</a>"
+      }
+      else
+        teacherNameHTML = teacherArray[teacher]
+
+      teacherNameHTML += "<br>"
       teacherSelection.append(teacherNameHTML)
 
       checkboxes.push(teacherInput)
@@ -664,6 +672,12 @@ function getTeacherRatings(teacherName, courseCode)
     }
 
     getJSON(teacherSource, teacherDataGetHeaders, function(data) {
+      if (Object.keys(data).length == 0)
+      {
+        resolve(null)
+        return
+      }
+
       var teacherRatingData = {"name":data["name"], "rating":data["rating"], "url":teacherRatingSite + data["name"].toLowerCase().replaceAll(" ", "-")}
       teachersRatingData[teacherID] = teacherRatingData
 
