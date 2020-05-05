@@ -1,7 +1,10 @@
-const rootHost = "https://scheduledata.herokuapp.com"
+const rootHost = "http://localhost:5000" //FIXX
 const dataSource = rootHost + "/query/"
 const sessionSource = rootHost + "/session/"
 const arenaSource = rootHost + "/arena/"
+const teacherSource = rootHost + "/teacher"
+
+const teacherRatingSite = "https://studentsreview.me/teachers/"
 
 const maxClasses = 7
 const minClasses = 5
@@ -394,6 +397,9 @@ function removeFromMyCourses(courseCode)
 
 //MARK: - Teacher Selection
 
+var teachersRatingData = {}
+var shouldAlwaysShowTeacherRating = false
+
 function loadTeacherSelection()
 {
   //Reset checkboxes
@@ -598,7 +604,7 @@ function selectCourse(courseElement)
     moveSelectionBox("#course", movementDirection)
   }
 
-  getTeachersForCourse(selectedCourse, function(teacherArray)
+  getTeachersForCourse(selectedCourse, async function(teacherArray)
   {
     var teacherSelection = $(".teacherSelection")
 
@@ -613,12 +619,119 @@ function selectCourse(courseElement)
       teacherInput.prop("disabled", (checkboxesDisabled && !selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].includes(teacherArray[teacher])))
       teacherInput.prop("checked", (selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].includes(teacherArray[teacher])))
       teacherSelection.append(teacherInput)
-      teacherSelection.append(" " + teacherArray[teacher] + "<br>")
+
+      var teacherRatingData = await getTeacherRatings(teacherArray[teacher], selectedCourse)
+      var teacherNameHTML = " <a onmouseover='showTeacherRating(this)' onmouseout='hideTeacherRating(this)' target='_blank' href='" + teacherRatingData["url"] + "'>" + teacherArray[teacher]
+      teacherNameHTML += createTeacherRatingDiv(teacherRatingData["rating"])
+      teacherNameHTML += "</a><br>"
+      teacherSelection.append(teacherNameHTML)
 
       checkboxes.push(teacherInput)
     }
     teacherSelection.append("<br>")
   })
+}
+
+function getTeacherRatings(teacherName, courseCode)
+{
+  var teacherRatingPromise = new Promise(async (resolve, reject) => {
+    var courseObject = await getCoursesPromise([courseCode])
+    courseObject = courseObject[0]
+    var departmentNumber = courseObject.departmentNum
+
+    var teacherID = teacherName + departmentNumber
+    if (Object.keys(teachersRatingData).includes(teacherID))
+    {
+      resolve(teachersRatingData[teacherID])
+      return
+    }
+
+    var teacherInitial
+    if (teacherName.includes(","))
+    {
+      teacherInitial = teacherName.split(", ")[1].charAt(0)
+      teacherName = teacherName.split(", ")[0]
+    }
+
+    var teacherDataGetHeaders = {
+      "search": teacherName.toLowerCase(),
+      "department": departmentNumber,
+    }
+
+    if (teacherInitial)
+    {
+      teacherDataGetHeaders["initial"] = teacherInitial.toLowerCase()
+    }
+
+    getJSON(teacherSource, teacherDataGetHeaders, function(data) {
+      var teacherRatingData = {"name":data["name"], "rating":data["rating"], "url":teacherRatingSite + data["name"].toLowerCase().replaceAll(" ", "-")}
+      teachersRatingData[teacherID] = teacherRatingData
+
+      resolve(teacherRatingData)
+    })
+  })
+
+  return teacherRatingPromise
+}
+
+function createTeacherRatingDiv(rating)
+{
+  var teacherRatingHTML = "<span class='ratingStars'>"
+  rating = Math.round(rating*2)/2
+
+  for (i=0; i < Math.floor(rating); i++)
+  {
+    teacherRatingHTML += "<img class='ratingStar' src='assets/favoriteIconPressed.png' />"
+  }
+  if (rating - Math.round(rating) != 0)
+  {
+    teacherRatingHTML += "<img class='ratingStar' src='assets/halfStarIcon.png' />"
+  }
+  for (i=0; i < 5-Math.ceil(rating); i++)
+  {
+    teacherRatingHTML += "<img class='ratingStar' src='assets/favoriteIcon.png' />"
+  }
+  teacherRatingHTML += "</span>"
+
+  return teacherRatingHTML
+}
+
+function showTeacherRating(teacherDiv)
+{
+  if (!shouldAlwaysShowTeacherRating)
+    unfade($(teacherDiv).find(".ratingStars")[0])
+}
+
+function hideTeacherRating(teacherDiv)
+{
+  if (!shouldAlwaysShowTeacherRating)
+    fade($(teacherDiv).find(".ratingStars")[0])
+}
+
+function fade(element) {
+    var op = 1;  // initial opacity
+    var timer = setInterval(function () {
+        if (op <= 0.1){
+            clearInterval(timer);
+            element.style.display = 'none';
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        op -= op * 0.1;
+    }, 5);
+}
+
+function unfade(element) {
+    var op = 0.1;  // initial opacity
+    element.style.display = 'inline';
+    var timer = setInterval(function () {
+        if (op >= 1){
+            clearInterval(timer);
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+        op += op * 0.1;
+    }, 5);
 }
 
 function checkedTeacher(checkbox)
@@ -1373,7 +1486,8 @@ async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters
           {
             thisScheduleInnerHTML += " or "
           }
-          thisScheduleInnerHTML += teacherArray[teacherNum]
+          var teacherData = await getTeacherRatings(teacherArray[teacherNum], schedules[scheduleNum][scheduleBlockNum])
+          thisScheduleInnerHTML += "<a target='_blank' href='" + teacherData["url"] + "'>" + teacherArray[teacherNum] + "</a>"
         }
       }
 
