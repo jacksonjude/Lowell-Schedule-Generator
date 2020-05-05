@@ -1085,6 +1085,8 @@ var schedules = []
 var currentSchedule = []
 var numberOfSchedulesDisplaying = 0
 
+var schedulesTmp = []
+
 var semesterNumberShowing = 0
 
 var showingFavorites = false
@@ -1141,6 +1143,7 @@ async function generateBlockArraysForSemester(semesterNumber)
 async function loadSchedules(semesterNumber, completion)
 {
   schedules = []
+  schedulesTmp = []
   currentSchedule = []
   numberOfSchedulesDisplaying = 0
 
@@ -1222,15 +1225,20 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
 
 async function createSchedules(semesterNumber)
 {
-  scheduleLoopSearch(0, semesterNumber, false)
+  await scheduleLoopSearch(0, semesterNumber, false)
+  previousGeneratingProgress = null
+
   schedules = removeUniqueOffBlocks(schedules)
   schedules = multiDimensionalUnique(schedules)
   schedules = await removeSchedulesWithoutPossibleSecondSemesters(schedules)
+
   console.log(schedules)
 }
 
-function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters)
+async function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters)
 {
+  if (semesterNumber == firstSemesterID-1 && (previousGeneratingProgress == null || schedules.length-previousGeneratingProgress > 40))
+    await updateGeneratingMessage(schedules.length, "Creating schedules")
   if (blockArrays[semesterNumber].length > indexOn)
   {
     for (var object in Object.keys(blockArrays[semesterNumber][indexOn]))
@@ -1247,7 +1255,7 @@ function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters)
       }
 
       currentSchedule.push(courseBlock)
-      scheduleLoopSearch(indexOn + 1, semesterNumber, shouldIgnoreFilters)
+      await scheduleLoopSearch(indexOn + 1, semesterNumber, shouldIgnoreFilters)
     }
   }
   else
@@ -1328,15 +1336,31 @@ async function removeSchedulesWithoutPossibleSecondSemesters(schedulesFound)
   schedules = []
   currentSchedule = []
 
-  scheduleLoopSearch(0, secondSemesterID-1, true)
+  await scheduleLoopSearch(0, secondSemesterID-1, true)
 
   for (i=firstSemesterSchedules.length-1; i >= 0; i--)
   {
+    let percentDone = Math.round(1000*(firstSemesterSchedules.length-i)/firstSemesterSchedules.length)/10
+    if (previousGeneratingProgress == null || previousGeneratingProgress.replace("%", "") != percentDone)
+      await updateGeneratingMessage(percentDone + "%", "Checking second semesters")
+
     if (findSecondSemesterSchedules(firstSemesterSchedules[i], courseObjects).length == 0)
       firstSemesterSchedules.splice(i, 1)
   }
 
   return firstSemesterSchedules
+}
+
+var previousGeneratingProgress
+async function updateGeneratingMessage(progress, action)
+{
+  var updateGeneratingMessagePromise = new Promise((resolve, reject) => {
+    if (progress)
+      $("#instructions").html("Generating... (" + action + ") (" + (progress) + ")"); previousGeneratingProgress = progress
+    setTimeout(function() { resolve() }, 0)
+  })
+
+  return updateGeneratingMessagePromise
 }
 
 function findSecondSemesterSchedules(firstSemesterSchedule, courseObjects)
@@ -1501,7 +1525,10 @@ async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters
             thisScheduleInnerHTML += " or "
           }
           var teacherData = await getTeacherRatings(teacherArray[teacherNum], schedules[scheduleNum][scheduleBlockNum])
-          thisScheduleInnerHTML += "<a target='_blank' href='" + teacherData["url"] + "'>" + teacherArray[teacherNum] + "</a>"
+          if (teacherData != null)
+            thisScheduleInnerHTML += "<a target='_blank' href='" + teacherData["url"] + "'>" + teacherArray[teacherNum] + "</a>"
+          else
+            thisScheduleInnerHTML += teacherArray[teacherNum]
         }
       }
 
@@ -1701,7 +1728,7 @@ function toggleFavoriteSchedule(inputElement)
 function toggleFavoriteFilter()
 {
   showingFavorites = !showingFavorites
-  showingFavorites ? (schedules = Object.values(favoriteSchedules), numberOfSchedulesDisplaying = 0, displaySchedules()) : (loadSchedules(semesterNumberShowing))
+  showingFavorites ? (schedulesTmp = schedules.concat(), schedules = Object.values(favoriteSchedules), numberOfSchedulesDisplaying = 0, displaySchedules()) : (schedules = schedulesTmp.concat(), displaySchedules())
 }
 
 function reloadThenShowFavorites()
@@ -1709,6 +1736,7 @@ function reloadThenShowFavorites()
   generateSchedules(function()
   {
     showingFavorites = true
+    schedulesTmp = schedules.concat()
     schedules = Object.values(favoriteSchedules)
     numberOfSchedulesDisplaying = 0
     displaySchedules()
@@ -1764,7 +1792,7 @@ async function createSecondSemesterScheduleDivs(fullScheduleDivID)
   schedules = []
   currentSchedule = []
 
-  scheduleLoopSearch(0, secondSemesterID-1, true)
+  await scheduleLoopSearch(0, secondSemesterID-1, true)
 
   semesterNumberShowing = 1
 
