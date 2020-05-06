@@ -397,6 +397,8 @@ function removeFromMyCourses(courseCode)
 
 //MARK: - Teacher Selection
 
+const teacherNameDivClass = "TEACHERNAME"
+
 var teachersRatingData = {}
 var shouldAlwaysShowTeacherRating = true
 
@@ -620,23 +622,15 @@ function selectCourse(courseElement)
       teacherInput.prop("checked", (selectedTeachers[selectedCourseCodes.indexOf(selectedCourse)].includes(teacherArray[teacher])))
       teacherSelection.append(teacherInput)
 
-      var teacherNameHTML
-      var teacherRatingData = await getTeacherRatings(teacherArray[teacher], selectedCourse)
-      if (teacherRatingData)
-      {
-        teacherNameHTML = " <a onmouseover='showTeacherRating(this)' onmouseout='hideTeacherRating(this)' target='_blank' href='" + teacherRatingData["url"] + "'>" + teacherArray[teacher]
-        teacherNameHTML += createTeacherRatingDiv(teacherRatingData["rating"])
-        teacherNameHTML += "</a>"
-      }
-      else
-        teacherNameHTML = teacherArray[teacher]
-
+      var teacherNameHTML = " <span class='" + teacherNameDivClass + "' coursecode='" + selectedCourse + "' teacher='" + teacherArray[teacher] + "'>" + teacherArray[teacher] + "</span>"
       teacherNameHTML += "<br>"
       teacherSelection.append(teacherNameHTML)
 
       checkboxes.push(teacherInput)
     }
     teacherSelection.append("<br>")
+
+    updateTeacherDivs(true)
   })
 }
 
@@ -746,6 +740,27 @@ function unfade(element) {
         element.style.filter = 'alpha(opacity=' + op * 100 + ")";
         op += op * 0.1;
     }, 5);
+}
+
+async function updateTeacherDivs(addRatingDivs)
+{
+  var teacherNameDivs = $("." + teacherNameDivClass)
+
+  for (divNum in teacherNameDivs)
+  {
+    var courseCode = $(teacherNameDivs[divNum]).attr("coursecode")
+    var teacher = $(teacherNameDivs[divNum]).attr("teacher")
+    var teacherRatingData = await getTeacherRatings(teacher, courseCode)
+    if (teacherRatingData)
+    {
+      $(teacherNameDivs[divNum]).empty()
+      var teacherNameHTML = "<a onmouseover='showTeacherRating(this)' onmouseout='hideTeacherRating(this)' target='_blank' href='" + teacherRatingData["url"] + "'>" + teacher
+      if (addRatingDivs)
+        teacherNameHTML += createTeacherRatingDiv(teacherRatingData["rating"])
+      teacherNameHTML += "</a>"
+      $(teacherNameDivs[divNum]).append(teacherNameHTML)
+    }
+  }
 }
 
 function checkedTeacher(checkbox)
@@ -1085,7 +1100,7 @@ var schedules = []
 var currentSchedule = []
 var numberOfSchedulesDisplaying = 0
 
-var schedulesTmp = []
+var schedulesNotFiltered = []
 
 var semesterNumberShowing = 0
 
@@ -1143,11 +1158,13 @@ async function generateBlockArraysForSemester(semesterNumber)
 async function loadSchedules(semesterNumber, completion)
 {
   schedules = []
-  schedulesTmp = []
+  schedulesNotFiltered = []
   currentSchedule = []
   numberOfSchedulesDisplaying = 0
 
   await createSchedules(semesterNumber)
+  schedulesNotFiltered = schedules.concat()
+  applyFilters()
 
   displaySchedules(null, completion)
 }
@@ -1225,7 +1242,7 @@ function getBlockDataFromCourseCodeAndSelectedTeachers(courseCode, column, compl
 
 async function createSchedules(semesterNumber)
 {
-  await scheduleLoopSearch(0, semesterNumber, false)
+  await scheduleLoopSearch(0, semesterNumber)
   previousGeneratingProgress = null
 
   schedules = removeUniqueOffBlocks(schedules)
@@ -1235,7 +1252,7 @@ async function createSchedules(semesterNumber)
   console.log(schedules)
 }
 
-async function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters)
+async function scheduleLoopSearch(indexOn, semesterNumber)
 {
   if (semesterNumber == firstSemesterID-1 && (previousGeneratingProgress == null || schedules.length-previousGeneratingProgress > 40))
     await updateGeneratingMessage(schedules.length, "Creating schedules")
@@ -1244,47 +1261,20 @@ async function scheduleLoopSearch(indexOn, semesterNumber, shouldIgnoreFilters)
     for (var object in Object.keys(blockArrays[semesterNumber][indexOn]))
     {
       let courseBlock = Object.keys(blockArrays[semesterNumber][indexOn])[object]
-      /*if (courseBlock.includes(offBlockID) && !currentSchedule.includes(courseBlock))
-      {
-        courseBlock = courseBlock.replace(courseBlock.replace(offBlockID, ""), "")
-      }*/
 
-      if (currentSchedule.includes(courseBlock) /*&& (courseBlock != offBlockID || countInArray(currentSchedule, courseBlock) >= maxClasses + 1 - selectedCourseCodes.length)*/)
+      if (currentSchedule.includes(courseBlock))
       {
         continue
       }
 
       currentSchedule.push(courseBlock)
-      await scheduleLoopSearch(indexOn + 1, semesterNumber, shouldIgnoreFilters)
+      await scheduleLoopSearch(indexOn + 1, semesterNumber)
     }
   }
   else
   {
-    let shouldAddSchedule = true
-    for (filterNum in filters)
-    {
-      if (filters[filterNum]["courseCode"] != undefined && filters[filterNum]["blockNumber"] != undefined && filters[filterNum]["teacher"] != undefined)
-      {
-        if (filters[filterNum]["blockNumber"] == "any")
-        {
-          if (filters[filterNum]["teacher"] != "any" && !blockArrays[semesterNumber][currentSchedule.indexOf(filters[filterNum]["courseCode"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))
-          {
-            shouldAddSchedule = false
-            break
-          }
-        }
-        else if (!((currentSchedule[parseInt(filters[filterNum]["blockNumber"])] == filters[filterNum]["courseCode"] || (currentSchedule[parseInt(filters[filterNum]["blockNumber"])].includes(offBlockID) && filters[filterNum]["courseCode"].includes(offBlockID))) && (filters[filterNum]["teacher"] == null || filters[filterNum]["teacher"] == "any" || blockArrays[semesterNumber][parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))))
-        {
-          shouldAddSchedule = false
-          break
-        }
-      }
-    }
+    schedules.push(currentSchedule)
 
-    if (shouldIgnoreFilters || shouldAddSchedule)
-    {
-      schedules.push(currentSchedule)
-    }
     currentSchedule = currentSchedule.concat()
   }
 
@@ -1336,7 +1326,7 @@ async function removeSchedulesWithoutPossibleSecondSemesters(schedulesFound)
   schedules = []
   currentSchedule = []
 
-  await scheduleLoopSearch(0, secondSemesterID-1, true)
+  await scheduleLoopSearch(0, secondSemesterID-1)
 
   for (i=firstSemesterSchedules.length-1; i >= 0; i--)
   {
@@ -1344,7 +1334,8 @@ async function removeSchedulesWithoutPossibleSecondSemesters(schedulesFound)
     if (previousGeneratingProgress == null || previousGeneratingProgress.replace("%", "") != percentDone)
       await updateGeneratingMessage(percentDone + "%", "Checking second semesters")
 
-    if (findSecondSemesterSchedules(firstSemesterSchedules[i], courseObjects).length == 0)
+    var secondSemesterSchedules = await findSecondSemesterSchedules(firstSemesterSchedules[i], courseObjects)
+    if (secondSemesterSchedules.length == 0)
       firstSemesterSchedules.splice(i, 1)
   }
 
@@ -1363,13 +1354,15 @@ async function updateGeneratingMessage(progress, action)
   return updateGeneratingMessagePromise
 }
 
-function findSecondSemesterSchedules(firstSemesterSchedule, courseObjects)
+async function findSecondSemesterSchedules(firstSemesterSchedule, courseObjects)
 {
   var allYearCoursesBlockNum = []
   for (j=0; j < firstSemesterSchedule.length; j++)
   {
     allYearCoursesBlockNum.push(null)
   }
+
+  var courseObjects = await getCoursesPromise(selectedCourseCodes)
 
   for (courseCodeNum in firstSemesterSchedule)
   {
@@ -1452,6 +1445,8 @@ async function displaySchedules(showMorePressed, completion)
     }
   }
 
+  updateTeacherDivs(false)
+
   $("#instructions").html("Done! (Showing " + numberOfSchedulesDisplaying + "/" + schedules.length + ")")
   $("#instructions").append(" " + (!showingFavorites ? " <button onclick='loadCourseSelection()'>Edit</button>" : "") + " <button onclick='reloadPage()'>Clear</button>" + " <button onclick='toggleFavoriteFilter()'>" + (showingFavorites ? "Hide Favorites" : "Show Favorites") + "</button>")
 
@@ -1486,11 +1481,6 @@ async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters
 
       thisScheduleInnerHTML += courseObject.courseName + " - "
 
-      // await getCourseName(schedules[scheduleNum][scheduleBlockNum], function(courseName)
-      // {
-      //   thisScheduleInnerHTML += courseName + " - "
-      // })
-
       let filtersForBlock = []
       if (!shouldIgnoreFilters)
       {
@@ -1499,7 +1489,6 @@ async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters
           if ((filters[filterNum]["blockNumber"] == scheduleBlockNum && filters[filterNum]["teacher"] != undefined) || (filters[filterNum]["blockNumber"] == "any" && filters[filterNum]["courseCode"] == schedules[scheduleNum][scheduleBlockNum]))
           {
             filtersForBlock = filters[filterNum]
-            //break
           }
         }
       }
@@ -1524,11 +1513,13 @@ async function createScheduleDivHTML(schedules, scheduleNum, shouldIgnoreFilters
           {
             thisScheduleInnerHTML += " or "
           }
-          var teacherData = await getTeacherRatings(teacherArray[teacherNum], schedules[scheduleNum][scheduleBlockNum])
-          if (teacherData != null)
-            thisScheduleInnerHTML += "<a target='_blank' href='" + teacherData["url"] + "'>" + teacherArray[teacherNum] + "</a>"
-          else
-            thisScheduleInnerHTML += teacherArray[teacherNum]
+
+          thisScheduleInnerHTML += " <span class='" + teacherNameDivClass + "' coursecode='" + schedules[scheduleNum][scheduleBlockNum] + "' teacher='" + teacherArray[teacherNum] + "'>" + teacherArray[teacherNum] + "</span>"
+          // var teacherData = await getTeacherRatings(teacherArray[teacherNum], schedules[scheduleNum][scheduleBlockNum])
+          // if (teacherData != null)
+          //   thisScheduleInnerHTML += "<a target='_blank' href='" + teacherData["url"] + "'>" + teacherArray[teacherNum] + "</a>"
+          // else
+          //   thisScheduleInnerHTML += teacherArray[teacherNum]
         }
       }
 
@@ -1728,7 +1719,22 @@ function toggleFavoriteSchedule(inputElement)
 function toggleFavoriteFilter()
 {
   showingFavorites = !showingFavorites
-  showingFavorites ? (schedulesTmp = schedules.concat(), schedules = Object.values(favoriteSchedules), numberOfSchedulesDisplaying = 0, displaySchedules()) : (schedules = schedulesTmp.concat(), numberOfSchedulesDisplaying = 0, displaySchedules())
+  showingFavorites ? (displayFavoriteSchedules()) : (displayAllSchedules())
+}
+
+function displayFavoriteSchedules()
+{
+  schedules = Object.values(favoriteSchedules)
+  numberOfSchedulesDisplaying = 0
+  displaySchedules()
+}
+
+function displayAllSchedules()
+{
+  schedules = schedulesNotFiltered.concat()
+  applyFilters()
+  numberOfSchedulesDisplaying = 0
+  displaySchedules()
 }
 
 function reloadThenShowFavorites()
@@ -1736,10 +1742,8 @@ function reloadThenShowFavorites()
   generateSchedules(function()
   {
     showingFavorites = true
-    schedulesTmp = schedules.concat()
-    schedules = Object.values(favoriteSchedules)
-    numberOfSchedulesDisplaying = 0
-    displaySchedules()
+    schedulesNotFiltered = schedules.concat()
+    displayFavoriteSchedules()
   })
 }
 
@@ -1792,11 +1796,11 @@ async function createSecondSemesterScheduleDivs(fullScheduleDivID)
   schedules = []
   currentSchedule = []
 
-  await scheduleLoopSearch(0, secondSemesterID-1, true)
+  await scheduleLoopSearch(0, secondSemesterID-1)
 
   semesterNumberShowing = 1
 
-  var secondSemesterSchedules = findSecondSemesterSchedules(scheduleToMatch, courseObjects)
+  var secondSemesterSchedules = await findSecondSemesterSchedules(scheduleToMatch, courseObjects)
 
   var secondSemesterHTML = "<div class='secondSemesterSchedules' id='secondSemesterSchedules" + scheduleID + "'><br><br>"
   for (scheduleNum in secondSemesterSchedules)
@@ -1809,8 +1813,9 @@ async function createSecondSemesterScheduleDivs(fullScheduleDivID)
   $("#" + fullScheduleDivID).append(secondSemesterHTML)
 
   semesterNumberShowing = 0
-
   schedules = firstSemesterSchedules
+
+  updateTeacherDivs(false)
 }
 
 function removeSecondSemesterScheduleDivs(fullScheduleDivID)
@@ -1823,7 +1828,7 @@ function removeSecondSemesterScheduleDivs(fullScheduleDivID)
 
 var justRemovedFilter = false
 
-function setupFilterMenu()
+async function setupFilterMenu()
 {
   var selection = $("#selection")
   if ($(".filterSelectionContainer") != null)
@@ -1847,7 +1852,7 @@ function setupFilterMenu()
 
   for (var filterNum = 0; filterNum < filters.length; filterNum++)
   {
-    addFilterSelectHTML(filterNum)
+    await addFilterSelectHTML(filterNum)
 
     $("#filterCourse" + filterNum + " option[value='" + filters[filterNum]["courseCode"] + "']").prop('selected', true)
     $("#filterBlock" + filterNum + " option[value='" + filters[filterNum]["blockNumber"] + "']").prop('selected', true)
@@ -1860,7 +1865,7 @@ function setupFilterMenu()
   filterSelection.append("<span id='filterBreaks1'><br><br></span>")
 }
 
-function addFilterSelectHTML(filterNum)
+async function addFilterSelectHTML(filterNum)
 {
   var filterSelection = $(".filterSelection")
   var filterRow = $("<span id=filterRow" + filterNum + ">")
@@ -1871,6 +1876,7 @@ function addFilterSelectHTML(filterNum)
     value: "none",
     text: "None"
   }))
+  var courseObjects = await getCoursesPromise(selectedCourseCodes)
   for (courseNum in courseObjects)
   {
     courseFilterSelect.append($('<option>',
@@ -1915,7 +1921,8 @@ function addFilterSelectHTML(filterNum)
 
       if (shouldReload)
       {
-        loadSchedules(semesterNumberShowing)
+        displayAllSchedules()
+        //loadSchedules(semesterNumberShowing)
       }
     }
   })
@@ -1954,7 +1961,8 @@ function addFilterSelectHTML(filterNum)
 
       if (shouldReload)
       {
-        loadSchedules(semesterNumberShowing)
+        displayAllSchedules()
+        //loadSchedules(semesterNumberShowing)
       }
     }
   })
@@ -1980,7 +1988,8 @@ function addFilterSelectHTML(filterNum)
 
     if (filterTeacherChanged)
     {
-      loadSchedules(semesterNumberShowing)
+      displayAllSchedules()
+      //loadSchedules(semesterNumberShowing)
     }
   })
   filterRow.append(teacherFilterSelect)
@@ -2078,7 +2087,7 @@ function addDefaultFilterTeacherOptions(teacherFilterSelect)
   }))
 }
 
-function addFilter()
+async function addFilter()
 {
   var filterSelection = $(".filterSelection")
   $("#filterBreaks0").remove()
@@ -2088,7 +2097,7 @@ function addFilter()
 
   filters.push({})
 
-  addFilterSelectHTML(filters.length - 1)
+  await addFilterSelectHTML(filters.length - 1)
 
   filterSelection.append("<span id='filterBreaks0'><br></span>")
   filterSelection.append("<button id='addFilterButton' onclick='addFilter()'>Add Filter</button>")
@@ -2109,12 +2118,49 @@ function removeFilter()
   if (shouldReload)
   {
     justRemovedFilter = true
-    loadSchedules(semesterNumberShowing)
+    displayAllSchedules()
+    //loadSchedules(semesterNumberShowing)
   }
   else if (filters.length == 0)
   {
     addFilter()
   }
+}
+
+function applyFilters()
+{
+  schedules = schedulesNotFiltered.concat()
+
+  for (i=schedules.length-1; i >= 0; i--)
+    if (!scheduleConformsToFilters(schedules[i]))
+      schedules.splice(i, 1)
+}
+
+function scheduleConformsToFilters(schedule, semesterNumber)
+{
+  semesterNumber = semesterNumber ? semesterNumber : firstSemesterID-1
+  var shouldAddSchedule = true
+  for (filterNum in filters)
+  {
+    if (filters[filterNum]["courseCode"] != undefined && filters[filterNum]["blockNumber"] != undefined && filters[filterNum]["teacher"] != undefined)
+    {
+      if (filters[filterNum]["blockNumber"] == "any")
+      {
+        if (filters[filterNum]["teacher"] != "any" && !blockArrays[semesterNumber][schedule.indexOf(filters[filterNum]["courseCode"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))
+        {
+          shouldAddSchedule = false
+          break
+        }
+      }
+      else if (!((schedule[parseInt(filters[filterNum]["blockNumber"])] == filters[filterNum]["courseCode"] || (schedule[parseInt(filters[filterNum]["blockNumber"])].includes(offBlockID) && filters[filterNum]["courseCode"].includes(offBlockID))) && (filters[filterNum]["teacher"] == null || filters[filterNum]["teacher"] == "any" || blockArrays[semesterNumber][parseInt(filters[filterNum]["blockNumber"])][filters[filterNum]["courseCode"]].includes(filters[filterNum]["teacher"]))))
+      {
+        shouldAddSchedule = false
+        break
+      }
+    }
+  }
+
+  return shouldAddSchedule
 }
 
 //MARK: - Sessions
