@@ -1728,7 +1728,7 @@ function toggleFavoriteSchedule(inputElement)
 function toggleFavoriteFilter()
 {
   showingFavorites = !showingFavorites
-  showingFavorites ? (schedulesTmp = schedules.concat(), schedules = Object.values(favoriteSchedules), numberOfSchedulesDisplaying = 0, displaySchedules()) : (schedules = schedulesTmp.concat(), displaySchedules())
+  showingFavorites ? (schedulesTmp = schedules.concat(), schedules = Object.values(favoriteSchedules), numberOfSchedulesDisplaying = 0, displaySchedules()) : (schedules = schedulesTmp.concat(), numberOfSchedulesDisplaying = 0, displaySchedules())
 }
 
 function reloadThenShowFavorites()
